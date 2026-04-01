@@ -88,6 +88,41 @@ class CFV_Hooks {
 
         // Pass per-form config and helpers to JS.
         $forms_config = self::collect_page_forms_config( $post->post_content );
+
+        // Enqueue intl-tel-input if any form on the page has a phone field with enable_intl.
+        $needs_intl = false;
+        foreach ( $forms_config as $fid => $fc ) {
+            foreach ( $fc['fields'] ?? [] as $field ) {
+                if ( ! empty( $field['enable_intl'] ) ) {
+                    $needs_intl = true;
+                    break 2;
+                }
+            }
+        }
+
+        if ( $needs_intl ) {
+            wp_enqueue_style(
+                'intl-tel-input',
+                CFV_PLUGIN_URL . 'assets/vendor/intl-tel-input/intlTelInput.min.css',
+                [],
+                '18.0.0'
+            );
+            wp_enqueue_script(
+                'intl-tel-input',
+                CFV_PLUGIN_URL . 'assets/vendor/intl-tel-input/intlTelInput.min.js',
+                [],
+                '18.0.0',
+                true
+            );
+            wp_enqueue_script(
+                'cfv-intl-phone',
+                CFV_PLUGIN_URL . 'assets/js/cfv-intl-phone.js',
+                [ 'intl-tel-input', 'cfv-validation' ],
+                CFV_VERSION,
+                true
+            );
+        }
+
         wp_localize_script( 'cfv-validation', 'cfvConfig', [
             'forms'   => $forms_config,
             'ajaxUrl' => admin_url( 'admin-ajax.php' ),
