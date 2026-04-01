@@ -1,0 +1,191 @@
+/* =============================================================================
+   CF7 Validation Addon Styles
+   ============================================================================= */
+
+/* Hide CF7's native error tips — our cfv-error-tip replaces them */
+.wpcf7-not-valid-tip {
+    display: none !important;
+}
+
+/* =============================================================================
+   Required asterisk
+   ============================================================================= */
+.cfv-required-asterisk {
+    color: #d63638;
+    font-weight: bold;
+    margin-left: 2px;
+}
+
+/* =============================================================================
+   Optional label
+   ============================================================================= */
+.cfv-optional-label {
+    color: #757575;
+    font-size: 0.85em;
+    font-weight: normal;
+    margin-left: 4px;
+}
+
+/* =============================================================================
+   Inline error tip
+   ============================================================================= */
+.cfv-error-tip {
+    display: none;
+    color: #d63638;
+    font-size: 0.875em;
+    margin-top: 4px;
+}
+
+.cfv-error-tip:not(:empty) {
+    display: block;
+}
+
+/* Highlight the field itself when invalid */
+.wpcf7-form-control.wpcf7-not-valid,
+input.cfv-invalid,
+textarea.cfv-invalid,
+select.cfv-invalid {
+    border-color: #d63638;
+    outline-color: #d63638;
+}
+
+/* =============================================================================
+   Character counter
+   ============================================================================= */
+.cfv-counter {
+    display: block;
+    font-size: 0.8em;
+    color: #757575;
+    margin-top: 2px;
+    text-align: right;
+}
+
+.cfv-counter--near {
+    color: #e07000;
+}
+
+.cfv-counter--over {
+    color: #d63638;
+    font-weight: bold;
+}
+
+/* =============================================================================
+   Disabled checkboxes / radios
+   ============================================================================= */
+.cfv-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+/* =============================================================================
+   Submit button — loading state
+   ============================================================================= */
+[type="submit"].cfv-loading {
+    position: relative;
+    color: transparent;
+    pointer-events: none;
+}
+
+[type="submit"].cfv-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: cfv-spin 0.6s linear infinite;
+}
+
+@keyframes cfv-spin {
+    to { transform: rotate( 360deg ); }
+}
+
+/* =============================================================================
+   Validation Tab (admin)
+   ============================================================================= */
+.cfv-validation-tab {
+    padding: 16px 0;
+}
+
+.cfv-validation-tab h3 {
+    margin-top: 24px;
+    margin-bottom: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.cfv-global-settings {
+    background: #f6f7f7;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.cfv-fields-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cfv-field-row {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.cfv-field-row__header {
+    background: #f6f7f7;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.cfv-field-row__name code {
+    font-size: 0.95em;
+}
+
+.cfv-field-row__type {
+    color: #757575;
+    font-size: 0.85em;
+}
+
+.cfv-field-row__cf-required {
+    background: #e0f0ff;
+    color: #007cba;
+    font-size: 0.75em;
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+
+.cfv-field-row__body {
+    padding: 14px;
+    display: grid;
+    grid-template-columns: repeat( auto-fill, minmax( 280px, 1fr ) );
+    gap: 12px;
+}
+
+.cfv-rules-group {
+    display: contents;
+}
+
+.cfv-rules-note {
+    grid-column: 1 / -1;
+    font-size: 0.85em;
+    color: #757575;
+    margin: 0;
+}
+
+/* =============================================================================
+   intl-tel-input path override
+   ============================================================================= */
+.iti__flag-container {
+    z-index: 10;
+}
