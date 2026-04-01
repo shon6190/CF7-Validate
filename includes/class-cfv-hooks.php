@@ -243,8 +243,11 @@ class CFV_Hooks {
      * @return string Modified form HTML.
      */
     public static function decorate_form_elements( string $form_html ): string {
-        // Implemented in Task 11.
-        return $form_html;
+        $form = WPCF7_ContactForm::get_current();
+        if ( ! $form ) {
+            return $form_html;
+        }
+        return CFV_Field_Decorator::decorate( $form_html, $form->id() );
     }
 
     // =========================================================================
