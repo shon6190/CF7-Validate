@@ -2,6 +2,9 @@ import { useState, useEffect } from '@wordpress/element';
 import { Spinner } from '@wordpress/components';
 import PropTypes from 'prop-types';
 import GlobalSettings from './GlobalSettings';
+import useFormFields from '../hooks/useFormFields';
+import FieldRuleRow  from './FieldRuleRow';
+import { getFieldDefaults } from '../utils/defaults';
 
 /* global cfvAdmin */
 
@@ -15,6 +18,7 @@ import GlobalSettings from './GlobalSettings';
 export default function ValidationTab( { formId } ) {
 	const [ config, setConfig ] = useState( null );
 	const [ saving, setSaving ] = useState( false );
+	const fields = useFormFields();
 	const [ saveMessage, setSaveMessage ] = useState( '' );
 	const [ saveError, setSaveError ] = useState( false );
 
@@ -88,7 +92,29 @@ export default function ValidationTab( { formId } ) {
 				global={ config.global }
 				onChange={ ( newGlobal ) => setConfig( { ...config, global: newGlobal } ) }
 			/>
-			{ /* Fields list — Task 9 */ }
+			<div className="cfv-fields-list">
+				<h3>Field Rules</h3>
+				{ fields.length === 0 && <p>No fields detected. Add fields to the Form tab first.</p> }
+				{ fields.map( ( field ) => {
+					const savedRules = config.fields?.[ field.name ] ?? {};
+					const defaults   = getFieldDefaults( field.type );
+					const rules      = { ...defaults, ...savedRules };
+
+					return (
+						<FieldRuleRow
+							key={ field.name }
+							field={ field }
+							rules={ rules }
+							onChange={ ( newRules ) =>
+								setConfig( {
+									...config,
+									fields: { ...config.fields, [ field.name ]: { ...newRules, type: field.type } },
+								} )
+							}
+						/>
+					);
+				} ) }
+			</div>
 			{ saveMessage && (
 				<p className={ saveError ? 'cfv-save-error' : 'cfv-save-success' }>
 					{ saveMessage }
