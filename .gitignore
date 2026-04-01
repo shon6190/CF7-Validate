@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+
+# WordPress
+*.log
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# intl-tel-input vendor (downloaded separately — see Task 14)
+# assets/vendor/intl-tel-input/
+
+# PHP
+*.cache
