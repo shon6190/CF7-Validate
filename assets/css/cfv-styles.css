@@ -189,3 +189,60 @@ select.cfv-invalid {
 .iti__flag-container {
     z-index: 10;
 }
+
+/* =============================================================================
+   File preview
+   ============================================================================= */
+.cfv-file-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.cfv-file-preview__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    max-width: 80px;
+}
+
+.cfv-file-preview__img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.cfv-file-preview__icon {
+    font-size: 2rem;
+}
+
+.cfv-file-preview__name {
+    font-size: 0.72em;
+    word-break: break-all;
+    text-align: center;
+    color: #555;
+}
+
+/* =============================================================================
+   Upload progress bar
+   ============================================================================= */
+.cfv-upload-progress {
+    width: 100%;
+    height: 4px;
+    background: #eee;
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.cfv-upload-progress__bar {
+    height: 100%;
+    width: 0%;
+    background: #007cba;
+    border-radius: 2px;
+    transition: width 0.2s ease;
+}

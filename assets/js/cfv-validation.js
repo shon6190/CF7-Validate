@@ -293,6 +293,49 @@
             } );
         } );
 
+        // File preview and upload progress.
+        Object.keys( fieldConfigs ).forEach( ( name ) => {
+            const config  = fieldConfigs[ name ];
+            if ( config.type !== 'file' || ! config.show_preview ) return;
+
+            const fieldEl = getFieldEl( name );
+            if ( ! fieldEl ) return;
+
+            // Create preview container.
+            const preview = document.createElement( 'div' );
+            preview.className = 'cfv-file-preview';
+            preview.dataset.field = name;
+            fieldEl.parentNode.insertBefore( preview, fieldEl.nextSibling );
+
+            fieldEl.addEventListener( 'change', () => {
+                preview.innerHTML = '';
+                const files = Array.from( fieldEl.files || [] );
+                files.forEach( ( file ) => {
+                    const item = document.createElement( 'div' );
+                    item.className = 'cfv-file-preview__item';
+
+                    if ( file.type.startsWith( 'image/' ) ) {
+                        const img = document.createElement( 'img' );
+                        img.src = URL.createObjectURL( file );
+                        img.className = 'cfv-file-preview__img';
+                        item.appendChild( img );
+                    } else {
+                        const icon = document.createElement( 'span' );
+                        icon.className = 'cfv-file-preview__icon';
+                        icon.textContent = '\u{1F4C4}';
+                        item.appendChild( icon );
+                    }
+
+                    const label = document.createElement( 'span' );
+                    label.className = 'cfv-file-preview__name';
+                    label.textContent = file.name;
+                    item.appendChild( label );
+
+                    preview.appendChild( item );
+                } );
+            } );
+        } );
+
         // Submit handler.
         formEl.addEventListener( 'submit', ( e ) => {
             const valid = runAllValidations();
@@ -315,6 +358,38 @@
                 btn.disabled = true;
                 btn.classList.add( 'cfv-loading' );
             }
+
+            // Inject progress bar if not already present.
+            let progressBar = formEl.querySelector( '.cfv-upload-progress' );
+            if ( ! progressBar ) {
+                progressBar = document.createElement( 'div' );
+                progressBar.className = 'cfv-upload-progress';
+                const inner = document.createElement( 'div' );
+                inner.className = 'cfv-upload-progress__bar';
+                progressBar.appendChild( inner );
+                formEl.appendChild( progressBar );
+            }
+
+            // Hook into CF7's XHR to track upload progress.
+            const origOpen = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function ( ...args ) {
+                this.upload.addEventListener( 'progress', ( e ) => {
+                    if ( e.lengthComputable ) {
+                        const pct = Math.round( ( e.loaded / e.total ) * 100 );
+                        const bar = formEl.querySelector( '.cfv-upload-progress__bar' );
+                        if ( bar ) bar.style.width = pct + '%';
+                    }
+                } );
+                this.upload.addEventListener( 'loadend', () => {
+                    // Reset after a short delay.
+                    setTimeout( () => {
+                        const bar = formEl.querySelector( '.cfv-upload-progress__bar' );
+                        if ( bar ) bar.style.width = '0%';
+                    }, 1000 );
+                    XMLHttpRequest.prototype.open = origOpen; // Restore.
+                } );
+                origOpen.apply( this, args );
+            };
         } );
 
         // CF7 form reset after successful submission.
