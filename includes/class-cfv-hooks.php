@@ -119,9 +119,42 @@ class CFV_Hooks {
      * @param string $hook Current admin page hook.
      */
     public static function enqueue_admin_assets( string $hook ): void {
-        // Implemented in Task 5.
-        // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
-        unset( $hook );
+        // Only enqueue on the CF7 form edit screen.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        if ( empty( $_GET['page'] ) || 'wpcf7' !== $_GET['page'] ) {
+            return;
+        }
+
+        $asset_file = CFV_PLUGIN_DIR . 'build/validation-tab/index.asset.php';
+        if ( ! file_exists( $asset_file ) ) {
+            return; // Build has not been run yet.
+        }
+
+        $asset = require $asset_file;
+
+        wp_enqueue_script(
+            'cfv-validation-tab',
+            CFV_PLUGIN_URL . 'build/validation-tab/index.js',
+            $asset['dependencies'],
+            $asset['version'],
+            true
+        );
+
+        // CSS may not exist if the entry has no styles yet — guard it.
+        $css_file = CFV_PLUGIN_DIR . 'build/validation-tab/index.css';
+        if ( file_exists( $css_file ) ) {
+            wp_enqueue_style(
+                'cfv-validation-tab-style',
+                CFV_PLUGIN_URL . 'build/validation-tab/index.css',
+                [ 'wp-components' ],
+                $asset['version']
+            );
+        }
+
+        wp_localize_script( 'cfv-validation-tab', 'cfvAdmin', [
+            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+            'nonce'   => wp_create_nonce( 'cfv_admin' ),
+        ] );
     }
 
     // =========================================================================
@@ -135,8 +168,20 @@ class CFV_Hooks {
      * @return array Panels with Validation tab added.
      */
     public static function register_validation_panel( array $panels ): array {
-        // Implemented in Task 5.
+        $panels['validation'] = [
+            'title'    => __( 'Validation', 'cf7-validate-pro' ),
+            'callback' => [ __CLASS__, 'render_validation_panel' ],
+        ];
         return $panels;
+    }
+
+    /**
+     * Render the Validation tab panel HTML (React mounts into this div).
+     *
+     * @param WPCF7_ContactForm $contact_form The current CF7 form.
+     */
+    public static function render_validation_panel( WPCF7_ContactForm $contact_form ): void {
+        echo '<div id="cfv-validation-tab" data-form-id="' . esc_attr( $contact_form->id() ) . '"></div>';
     }
 
     // =========================================================================
