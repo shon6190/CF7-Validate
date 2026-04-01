@@ -300,9 +300,17 @@ class CFV_Hooks {
      * @return WPCF7_ContactForm Unchanged contact form.
      */
     public static function validate_submission( WPCF7_ContactForm $contact_form, &$abort, WPCF7_Submission $submission ): WPCF7_ContactForm {
-        // Implemented in Task 17.
-        // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
-        unset( $submission );
+        $form_id = $contact_form->id();
+        $posted  = $submission->get_posted_data();
+        $files   = $_FILES; // phpcs:ignore WordPress.Security.NonceVerification
+
+        $errors = CFV_Validator::validate( $form_id, $posted, $files );
+
+        if ( ! empty( $errors ) ) {
+            $abort = true;
+            self::$validation_errors = $errors;
+        }
+
         return $contact_form;
     }
 
@@ -318,9 +326,27 @@ class CFV_Hooks {
      * @return array Modified response.
      */
     public static function override_error_response( array $response, array $result ): array {
-        // Implemented in Task 17.
-        // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
-        unset( $result );
+        if ( empty( self::$validation_errors ) ) {
+            return $response;
+        }
+
+        $response['status']  = 'validation_failed';
+        $response['message'] = __( 'Please correct the errors below.', 'cf7-validate-pro' );
+
+        // Build invalid-fields array in the format CF7 expects.
+        $invalid_fields = [];
+        foreach ( self::$validation_errors as $field_name => $message ) {
+            $invalid_fields[] = [
+                'field'   => $field_name,
+                'message' => $message,
+                'idref'   => null,
+            ];
+        }
+        $response['invalid_fields'] = $invalid_fields;
+
+        // Reset for next submission.
+        self::$validation_errors = [];
+
         return $response;
     }
 
