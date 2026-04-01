@@ -1,6 +1,7 @@
 import { useState, useEffect } from '@wordpress/element';
 import { Spinner } from '@wordpress/components';
 import PropTypes from 'prop-types';
+import GlobalSettings from './GlobalSettings';
 
 /* global cfvAdmin */
 
@@ -83,7 +84,11 @@ export default function ValidationTab( { formId } ) {
 	return (
 		<div className="cfv-validation-tab">
 			<h2>Validation Settings</h2>
-			{ /* GlobalSettings and FieldRuleRow list added in Tasks 7 and 9 */ }
+			<GlobalSettings
+				global={ config.global }
+				onChange={ ( newGlobal ) => setConfig( { ...config, global: newGlobal } ) }
+			/>
+			{ /* Fields list — Task 9 */ }
 			{ saveMessage && (
 				<p className={ saveError ? 'cfv-save-error' : 'cfv-save-success' }>
 					{ saveMessage }
