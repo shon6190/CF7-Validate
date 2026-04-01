@@ -1,5 +1,6 @@
 import { useState, useEffect } from '@wordpress/element';
 import { Spinner } from '@wordpress/components';
+import PropTypes from 'prop-types';
 
 /* global cfvAdmin */
 
@@ -98,3 +99,7 @@ export default function ValidationTab( { formId } ) {
 		</div>
 	);
 }
+
+ValidationTab.propTypes = {
+	formId: PropTypes.number.isRequired,
+};

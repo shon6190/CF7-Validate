@@ -1,4 +1,4 @@
-import { render } from '@wordpress/element';
+import { createRoot } from '@wordpress/element';
 import ValidationTab from './components/ValidationTab';
 
 /**
@@ -15,7 +15,7 @@ const mount = () => {
 		return;
 	}
 
-	render( <ValidationTab formId={ formId } />, el );
+	createRoot( el ).render( <ValidationTab formId={ formId } /> );
 };
 
 document.addEventListener( 'DOMContentLoaded', mount );
