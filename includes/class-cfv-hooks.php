@@ -192,14 +192,44 @@ class CFV_Hooks {
      * AJAX handler: save validation config for a form.
      */
     public static function ajax_save_config(): void {
-        // Implemented in Task 10.
+        check_ajax_referer( 'cfv_admin', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( 'Unauthorized', 403 );
+        }
+
+        $form_id     = absint( $_POST['form_id'] ?? 0 );
+        $config_json = sanitize_textarea_field( wp_unslash( $_POST['config'] ?? '' ) );
+
+        if ( ! $form_id || ! $config_json ) {
+            wp_send_json_error( 'Invalid data.' );
+        }
+
+        $config = json_decode( $config_json, true );
+        if ( ! is_array( $config ) ) {
+            wp_send_json_error( 'Invalid JSON.' );
+        }
+
+        CFV_Config::save( $form_id, $config );
+        wp_send_json_success( 'Saved.' );
     }
 
     /**
      * AJAX handler: load validation config for a form.
      */
     public static function ajax_get_config(): void {
-        // Implemented in Task 10.
+        check_ajax_referer( 'cfv_admin', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( 'Unauthorized', 403 );
+        }
+
+        $form_id = absint( $_POST['form_id'] ?? 0 );
+        if ( ! $form_id ) {
+            wp_send_json_error( 'Invalid form ID.' );
+        }
+
+        wp_send_json_success( CFV_Config::get( $form_id ) );
     }
 
     // =========================================================================
