@@ -199,7 +199,7 @@ class CFV_Hooks {
         }
 
         $form_id     = absint( $_POST['form_id'] ?? 0 );
-        $config_json = sanitize_textarea_field( wp_unslash( $_POST['config'] ?? '' ) );
+        $config_json = wp_unslash( $_POST['config'] ?? '' );
 
         if ( ! $form_id || ! $config_json ) {
             wp_send_json_error( 'Invalid data.' );
