@@ -362,8 +362,23 @@ class CFV_Hooks {
      * @param bool    $update  Whether this is an update (true) or insert (false).
      */
     public static function maybe_copy_config_on_duplicate( int $post_id, WP_Post $post, bool $update ): void {
-        // Implemented in Task 18.
-        // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
-        unset( $post_id, $post, $update );
+        // Only act on CF7 form posts being inserted (not updated).
+        if ( $update || $post->post_type !== 'wpcf7_contact_form' ) {
+            return;
+        }
+
+        // Check for Duplicate Post plugin's original post reference.
+        $original_id = (int) get_post_meta( $post_id, '_dp_original', true );
+
+        // Also check WPCF7's own copy mechanism (it stores _copy_from in some versions).
+        if ( ! $original_id ) {
+            $original_id = (int) get_post_meta( $post_id, '_wpcf7_copy_from', true );
+        }
+
+        if ( ! $original_id ) {
+            return;
+        }
+
+        CFV_Config::copy( $original_id, $post_id );
     }
 }
