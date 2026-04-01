@@ -148,7 +148,6 @@ class CFV_Hooks {
      */
     public static function ajax_save_config(): void {
         // Implemented in Task 10.
-        wp_send_json_error( 'Not implemented yet.' );
     }
 
     /**
@@ -156,7 +155,6 @@ class CFV_Hooks {
      */
     public static function ajax_get_config(): void {
         // Implemented in Task 10.
-        wp_send_json_error( 'Not implemented yet.' );
     }
 
     // =========================================================================
