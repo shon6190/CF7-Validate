@@ -1,0 +1,12 @@
+{
+  "name": "cf7-validate-pro",
+  "version": "1.0.0",
+  "description": "CF7 Validate Pro build configuration",
+  "scripts": {
+    "build": "wp-scripts build src/validation-tab/index.js --output-path=build/validation-tab",
+    "start": "wp-scripts start src/validation-tab/index.js --output-path=build/validation-tab"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^27.0.0"
+  }
+}
