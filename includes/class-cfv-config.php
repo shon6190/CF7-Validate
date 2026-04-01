@@ -119,14 +119,19 @@ class CFV_Config {
      * Get the full config for a form, merging saved values over global defaults.
      *
      * @param int $form_id CF7 form post ID.
-     * @return array { global: array, fields: array }
+     * @return array{global: array<string, mixed>, fields: array<string, mixed>}
      */
     public static function get( int $form_id ): array {
         $saved_json = get_post_meta( $form_id, self::META_KEY, true );
-        $saved      = $saved_json ? json_decode( $saved_json, true ) : [];
-
-        if ( ! is_array( $saved ) ) {
-            $saved = [];
+        $saved      = [];
+        if ( $saved_json ) {
+            $decoded = json_decode( $saved_json, true );
+            if ( JSON_ERROR_NONE !== json_last_error() ) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+                error_log( sprintf( 'CF7 Validate Pro: malformed config JSON for form %d — %s', $form_id, json_last_error_msg() ) );
+            } elseif ( is_array( $decoded ) ) {
+                $saved = $decoded;
+            }
         }
 
         return [
@@ -154,7 +159,13 @@ class CFV_Config {
             $sanitized['fields'][ $clean_name ] = self::sanitize_field_config( (array) $field_config );
         }
 
-        update_post_meta( $form_id, self::META_KEY, wp_json_encode( $sanitized ) );
+        $json = wp_json_encode( $sanitized );
+        if ( false === $json ) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log( sprintf( 'CF7 Validate Pro: failed to encode config for form %d', $form_id ) );
+            return;
+        }
+        update_post_meta( $form_id, self::META_KEY, $json );
     }
 
     /**
@@ -171,7 +182,7 @@ class CFV_Config {
 
             if ( is_bool( $value ) ) {
                 $out[ $key ] = (bool) $value;
-            } elseif ( is_int( $value ) || ( is_string( $value ) && ctype_digit( $value ) ) ) {
+            } elseif ( is_int( $value ) || ( is_string( $value ) && is_numeric( $value ) && strpos( $value, '.' ) === false ) ) {
                 $out[ $key ] = absint( $value );
             } elseif ( is_float( $value ) ) {
                 $out[ $key ] = (float) $value;
@@ -196,6 +207,8 @@ class CFV_Config {
         $raw = get_post_meta( $source_form_id, self::META_KEY, true );
         if ( $raw ) {
             update_post_meta( $target_form_id, self::META_KEY, $raw );
+        } else {
+            delete_post_meta( $target_form_id, self::META_KEY );
         }
     }
 }
