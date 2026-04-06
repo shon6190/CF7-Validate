@@ -311,9 +311,13 @@
             const events = [ 'focus', 'input', 'blur', 'change' ];
             events.forEach( ( evt ) => {
                 fieldEl.addEventListener( evt, () => {
-                    // Collapse whitespace on blur.
-                    if ( evt === 'blur' && config.collapse_whitespace ) {
-                        fieldEl.value = collapseWhitespace( fieldEl.value );
+                    if ( evt === 'blur' ) {
+                        // Always trim leading/trailing spaces on blur for all fields.
+                        fieldEl.value = fieldEl.value.trim();
+                        // Also collapse consecutive internal whitespace if configured.
+                        if ( config.collapse_whitespace ) {
+                            fieldEl.value = collapseWhitespace( fieldEl.value );
+                        }
                     }
                     // Apply input mask on input.
                     if ( evt === 'input' && config.input_mask ) {
