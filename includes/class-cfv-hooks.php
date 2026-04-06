@@ -191,13 +191,21 @@ class CFV_Hooks {
             true
         );
 
-        // CSS may not exist if the entry has no styles yet — guard it.
+        // Always load the plugin stylesheet so admin tab styles are available.
+        wp_enqueue_style(
+            'cfv-styles',
+            CFV_PLUGIN_URL . 'assets/css/cfv-styles.css',
+            [ 'wp-components' ],
+            CFV_VERSION
+        );
+
+        // Also load compiled CSS from the build if it exists.
         $css_file = CFV_PLUGIN_DIR . 'build/validation-tab/index.css';
         if ( file_exists( $css_file ) ) {
             wp_enqueue_style(
                 'cfv-validation-tab-style',
                 CFV_PLUGIN_URL . 'build/validation-tab/index.css',
-                [ 'wp-components' ],
+                [ 'cfv-styles' ],
                 $asset['version']
             );
         }
