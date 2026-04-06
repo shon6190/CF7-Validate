@@ -53,8 +53,7 @@ class CFV_Config {
                 'counter_format'      => 'off',
             ],
             'email' => [
-                'required'        => false,
-                'trim_whitespace' => true,
+                'required' => false,
             ],
             'tel' => [
                 'required'        => false,

@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output
-build/
+# Build output is committed for plugin distribution.
+# build/
 
 # WordPress
 *.log
