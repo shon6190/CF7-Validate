@@ -70,7 +70,7 @@
     // Validate a single field — returns { valid, message }
     // =========================================================================
 
-    function validateField( fieldName, fieldEl, config, itiInstance ) {
+    function validateField( fieldName, fieldEl, config, itiInstance, scope ) {
         const type    = config.type || 'text';
         const label   = config.label || toLabel( fieldName );
         let   value   = fieldEl ? fieldEl.value : '';
@@ -83,7 +83,7 @@
         // Required check.
         if ( config.required ) {
             if ( type === 'checkbox' || type === 'radio' ) {
-                const group = Array.from( document.querySelectorAll( `[name="${ fieldName }"], [name="${ fieldName }[]"]` ) );
+                const group = Array.from( ( scope || document ).querySelectorAll( `[name="${ fieldName }"], [name="${ fieldName }[]"]` ) );
                 if ( ! Rules.checkboxRequired( group ) ) {
                     return { valid: false, message: buildMessage( 'checkboxRequired', label, config ) };
                 }
@@ -169,16 +169,16 @@
     // Error display helpers
     // =========================================================================
 
-    function showError( fieldName, message ) {
-        const span = document.querySelector( `.cfv-error-tip[data-field="${ fieldName }"]` );
+    function showError( fieldName, message, scope ) {
+        const span = ( scope || document ).querySelector( `.cfv-error-tip[data-field="${ fieldName }"]` );
         if ( span ) {
             span.textContent = message;
             span.style.display = 'block';
         }
     }
 
-    function clearError( fieldName ) {
-        const span = document.querySelector( `.cfv-error-tip[data-field="${ fieldName }"]` );
+    function clearError( fieldName, scope ) {
+        const span = ( scope || document ).querySelector( `.cfv-error-tip[data-field="${ fieldName }"]` );
         if ( span ) {
             span.textContent = '';
             span.style.display = 'none';
@@ -253,12 +253,12 @@
             // user first interacts with a field.
             const itiInstances = window.cfvItiInstances?.[ instanceKey ] || {};
             const iti     = itiInstances[ name ] || null;
-            const result  = validateField( name, fieldEl, config, iti );
+            const result  = validateField( name, fieldEl, config, iti, formEl );
 
             if ( result.valid ) {
-                clearError( name );
+                clearError( name, formEl );
             } else {
-                showError( name, result.message );
+                showError( name, result.message, formEl );
             }
             return result.valid;
         }

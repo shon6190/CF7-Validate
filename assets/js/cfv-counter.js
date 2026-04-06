@@ -7,7 +7,8 @@
             const max       = parseInt( counter.dataset.max, 10 );
             const format    = counter.dataset.format || 'count/max';
 
-            const field = document.querySelector( `[name="${ fieldName }"]` );
+            const form  = counter.closest( 'form' );
+            const field = ( form || document ).querySelector( `[name="${ fieldName }"]` );
             if ( ! field || ! max ) return;
 
             function update() {
