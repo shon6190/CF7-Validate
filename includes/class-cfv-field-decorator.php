@@ -39,9 +39,19 @@ class CFV_Field_Decorator {
             }
 
             // --- Inject empty error span after the field input/textarea/select ---
-            $error_span    = '<span class="cfv-error-tip" data-field="' . esc_attr( $field_name ) . '" role="alert" aria-live="polite"></span>';
-            $input_pattern = '/(<(?:input|textarea|select)\b[^>]*\bname=["\']?' . preg_quote( $field_name, '/' ) . '["\']?[^>]*\/?>)/si';
-            $html = preg_replace( $input_pattern, '$1' . $error_span, $html );
+            $error_span = '<span class="cfv-error-tip" data-field="' . esc_attr( $field_name ) . '" role="alert" aria-live="polite"></span>';
+
+            // Textarea has separate open/close tags — inject after </textarea> to avoid
+            // the span appearing as literal text content inside the element.
+            $quoted = preg_quote( $field_name, '/' );
+            $textarea_pattern = '/(<textarea\b[^>]*\bname=["\']?' . $quoted . '["\']?[^>]*>[\s\S]*?<\/textarea>)/si';
+            if ( preg_match( $textarea_pattern, $html ) ) {
+                $html = preg_replace( $textarea_pattern, '$1' . $error_span, $html );
+            } else {
+                // input and select: self-closing or single opening tag — inject after it.
+                $input_pattern = '/(<(?:input|select)\b[^>]*\bname=["\']?' . $quoted . '["\']?[^>]*\/?>)/si';
+                $html = preg_replace( $input_pattern, '$1' . $error_span, $html );
+            }
 
             // --- Inject counter element below textarea/text fields with max_length ---
             if ( $counter_format !== 'off' && $max_length > 0 ) {
