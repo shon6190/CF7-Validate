@@ -9,7 +9,6 @@
     const Rules = {
         required:          ( v ) => v.trim() !== '',
         alphaOnly:         ( v ) => /^[a-zA-Z\s]*$/.test( v ),
-        noLeadingSpaces:   ( v ) => ! /^\s/.test( v ),
         minLength:         ( v, n ) => v.trim().length >= parseInt( n, 10 ),
         maxLength:         ( v, n ) => v.trim().length <= parseInt( n, 10 ),
         email:             ( v ) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test( v.trim() ),
@@ -45,7 +44,6 @@
             required:             `${ label } is required`,
             noLeadingTrailing:    `${ label } must not have leading or trailing spaces`,
             alphaOnly:            `${ label } must contain letters only`,
-            noLeadingSpaces:      `${ label } must not start with a space`,
             minLength:       `${ label } must be at least ${ config.min_length } characters`,
             maxLength:       `${ label } must be no more than ${ config.max_length } characters`,
             email:           `${ label } must be a valid email address`,

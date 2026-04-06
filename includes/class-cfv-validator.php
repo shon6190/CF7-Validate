@@ -168,15 +168,29 @@ class CFV_Validator {
 
         // File.
         if ( $type === 'file' && ! empty( $files[ $field_name ] ) ) {
-            $file = $files[ $field_name ];
-            if ( $file['error'] === UPLOAD_ERR_OK ) {
-                $allowed_types = array_map( 'trim', explode( ',', $config['allowed_types'] ?? 'jpg,jpeg,png,pdf' ) );
-                $ext           = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
+            $file          = $files[ $field_name ];
+            $allowed_types = array_map( 'trim', explode( ',', $config['allowed_types'] ?? 'jpg,jpeg,png,pdf' ) );
+            $max_bytes     = ( (float) ( $config['max_size_mb'] ?? 5 ) ) * 1024 * 1024;
+
+            // Normalise to a list of files — CF7 sends a single-file array for
+            // one upload but a nested array for multiple files.
+            $file_list = is_array( $file['name'] )
+                ? array_map( fn( $i ) => [
+                    'name'  => $file['name'][ $i ],
+                    'error' => $file['error'][ $i ],
+                    'size'  => $file['size'][ $i ],
+                  ], array_keys( $file['name'] ) )
+                : [ $file ];
+
+            foreach ( $file_list as $f ) {
+                if ( $f['error'] !== UPLOAD_ERR_OK ) {
+                    continue;
+                }
+                $ext = strtolower( pathinfo( $f['name'], PATHINFO_EXTENSION ) );
                 if ( ! in_array( $ext, $allowed_types, true ) ) {
                     return "$label accepts " . implode( ', ', $allowed_types ) . " files only";
                 }
-                $max_bytes = ( (float) ( $config['max_size_mb'] ?? 5 ) ) * 1024 * 1024;
-                if ( $file['size'] > $max_bytes ) {
+                if ( $f['size'] > $max_bytes ) {
                     return "$label must be under {$config['max_size_mb']}MB";
                 }
             }

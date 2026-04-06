@@ -1,14 +1,10 @@
-import { ToggleControl } from '@wordpress/components';
-
-export default function CheckboxRules( { rules, onChange } ) {
-    const set = ( key, val ) => onChange( { ...rules, [ key ]: val } );
+export default function CheckboxRules() {
     return (
         <div className="cfv-rules-group">
-            <ToggleControl
-                label="Required — at least one option must be selected"
-                checked={ !! rules.required }
-                onChange={ v => set( 'required', v ) }
-            />
+            <p className="cfv-rules-note">
+                Use the Required toggle above to enforce that at least one
+                option must be selected before submission.
+            </p>
         </div>
     );
 }
