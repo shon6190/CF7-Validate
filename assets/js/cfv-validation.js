@@ -42,9 +42,10 @@
 
     function buildMessage( rule, label, config ) {
         const messages = {
-            required:        `${ label } is required`,
-            alphaOnly:       `${ label } must contain letters only`,
-            noLeadingSpaces: `${ label } must not start with a space`,
+            required:             `${ label } is required`,
+            noLeadingTrailing:    `${ label } must not have leading or trailing spaces`,
+            alphaOnly:            `${ label } must contain letters only`,
+            noLeadingSpaces:      `${ label } must not start with a space`,
             minLength:       `${ label } must be at least ${ config.min_length } characters`,
             maxLength:       `${ label } must be no more than ${ config.max_length } characters`,
             email:           `${ label } must be a valid email address`,
@@ -77,7 +78,13 @@
 
         // ── intl-tel-input phone: handle as a complete self-contained block ──
         if ( type === 'tel' && itiInstance ) {
-            const rawValue = ( fieldEl ? fieldEl.value : '' ).trim();
+            const rawInput = fieldEl ? fieldEl.value : '';
+
+            if ( rawInput !== rawInput.trim() ) {
+                return { valid: false, message: buildMessage( 'noLeadingTrailing', label, config ) };
+            }
+
+            const rawValue = rawInput.trim();
 
             // Reject alphabetic characters before anything else.
             if ( /[a-zA-Z]/.test( rawValue ) ) {
@@ -125,6 +132,12 @@
 
         // Skip further checks if empty and not required.
         if ( ! value.trim() && ! config.required ) return { valid: true };
+
+        // Leading / trailing space check for all text-based fields.
+        const textBasedTypes = [ 'text', 'name', 'email', 'tel', 'textarea', 'url', 'number' ];
+        if ( textBasedTypes.includes( type ) && value !== value.trim() ) {
+            return { valid: false, message: buildMessage( 'noLeadingTrailing', label, config ) };
+        }
 
         // Type-specific rules.
         if ( type === 'email' ) {

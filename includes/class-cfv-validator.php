@@ -78,6 +78,12 @@ class CFV_Validator {
         // Skip further checks if empty and not required.
         if ( trim( $value ) === '' && $type !== 'file' ) return '';
 
+        // Leading / trailing space check for all text-based fields.
+        $text_based = [ 'text', 'name', 'email', 'tel', 'textarea', 'url', 'number' ];
+        if ( in_array( $type, $text_based, true ) && $value !== trim( $value ) ) {
+            return "$label must not have leading or trailing spaces";
+        }
+
         // Email.
         if ( $type === 'email' ) {
             $trimmed = trim( $value );

@@ -8,6 +8,7 @@ import TextareaRules from './RuleInputs/TextareaRules';
 import SelectRules   from './RuleInputs/SelectRules';
 import CheckboxRules from './RuleInputs/CheckboxRules';
 import FileRules     from './RuleInputs/FileRules';
+import UrlRules      from './RuleInputs/UrlRules';
 
 const RULES_COMPONENT_MAP = {
     text:     TextRules,
@@ -16,7 +17,7 @@ const RULES_COMPONENT_MAP = {
     tel:      PhoneRules,
     number:   NumericRules,
     textarea: TextareaRules,
-    url:      TextRules,  // URL reuses TextRules (no special config beyond required)
+    url:      UrlRules,
     select:   SelectRules,
     checkbox: CheckboxRules,
     radio:    CheckboxRules,  // Radio reuses CheckboxRules
