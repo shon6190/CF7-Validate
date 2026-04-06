@@ -60,11 +60,18 @@ class CFV_Field_Decorator {
                 $html = str_replace( $error_span, $error_span . $counter, $html );
             }
 
-            // --- Apply max-height to textarea for scrollbar ---
-            if ( $max_height > 0 ) {
+            // --- Apply maxlength and max-height attributes to textarea ---
+            if ( $max_length > 0 || $max_height > 0 ) {
+                $attrs = '';
+                if ( $max_length > 0 ) {
+                    $attrs .= ' maxlength="' . esc_attr( $max_length ) . '"';
+                }
+                if ( $max_height > 0 ) {
+                    $attrs .= ' style="max-height:' . esc_attr( $max_height ) . 'px;overflow-y:auto;"';
+                }
                 $html = preg_replace(
                     '/(<textarea\b[^>]*\bname=["\']?' . preg_quote( $field_name, '/' ) . '["\']?[^>]*)(>)/si',
-                    '$1 style="max-height:' . $max_height . 'px;overflow-y:auto;" $2',
+                    '$1' . $attrs . '$2',
                     $html
                 );
             }
