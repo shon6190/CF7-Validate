@@ -14,7 +14,17 @@ class CFV_Field_Decorator {
         $global        = $config['global'] ?? [];
         $show_optional = ! empty( $global['show_optional_label'] );
 
+        $processed = []; // Track processed field names (lowercase) to skip duplicates.
+
         foreach ( $fields as $field_name => $field_config ) {
+            // Skip if this field (case-insensitive) has already been decorated.
+            // Prevents double injection when config has both 'Field' and 'field' keys.
+            $field_key = strtolower( $field_name );
+            if ( isset( $processed[ $field_key ] ) ) {
+                continue;
+            }
+            $processed[ $field_key ] = true;
+
             $required       = ! empty( $field_config['required'] );
             $counter_format = $field_config['counter_format'] ?? 'off';
             $max_length     = ! empty( $field_config['max_length'] ) ? (int) $field_config['max_length'] : 0;

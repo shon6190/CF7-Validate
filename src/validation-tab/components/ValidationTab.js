@@ -96,7 +96,12 @@ export default function ValidationTab( { formId } ) {
 				<h3>Field Rules</h3>
 				{ fields.length === 0 && <p>No fields detected. Add fields to the Form tab first.</p> }
 				{ fields.map( ( field ) => {
-					const savedRules = config.fields?.[ field.name ] ?? {};
+					// Case-insensitive lookup — config keys may differ in case from
+					// the parsed field name (e.g. 'additionalnotes' vs 'Additionalnotes').
+					const savedKey   = Object.keys( config.fields ?? {} ).find(
+						( k ) => k.toLowerCase() === field.name.toLowerCase()
+					);
+					const savedRules = savedKey ? ( config.fields[ savedKey ] ?? {} ) : {};
 					const defaults   = getFieldDefaults( field.type );
 					const rules      = { ...defaults, ...savedRules };
 
@@ -105,12 +110,19 @@ export default function ValidationTab( { formId } ) {
 							key={ field.name }
 							field={ field }
 							rules={ rules }
-							onChange={ ( newRules ) =>
+							onChange={ ( newRules ) => {
+								// Remove all case variants of this field name then store
+								// with the canonical case from the CF7 form parser.
+								const cleanFields = Object.fromEntries(
+									Object.entries( config.fields ?? {} ).filter(
+										( [ k ] ) => k.toLowerCase() !== field.name.toLowerCase()
+									)
+								);
 								setConfig( {
 									...config,
-									fields: { ...config.fields, [ field.name ]: { ...newRules, type: field.type } },
-								} )
-							}
+									fields: { ...cleanFields, [ field.name ]: { ...newRules, type: field.type } },
+								} );
+							} }
 						/>
 					);
 				} ) }
