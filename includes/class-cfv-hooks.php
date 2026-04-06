@@ -59,7 +59,15 @@ class CFV_Hooks {
     public static function enqueue_frontend_assets(): void {
         global $post;
 
-        if ( ! is_a( $post, 'WP_Post' ) || ! has_shortcode( $post->post_content, 'contact-form-7' ) ) {
+        if ( ! is_a( $post, 'WP_Post' ) ) {
+            return;
+        }
+
+        $content = $post->post_content;
+        $has_cf7 = has_shortcode( $content, 'contact-form-7' )
+                || strpos( $content, 'wp:contact-form-7' ) !== false;
+
+        if ( ! $has_cf7 ) {
             return;
         }
 
@@ -136,13 +144,25 @@ class CFV_Hooks {
      * @return array<int, array> Form ID → config array.
      */
     private static function collect_page_forms_config( string $content ): array {
-        $config = [];
+        $config  = [];
+        $all_ids = [];
 
-        preg_match_all( '/\[contact-form-7[^\]]*id=["\']?(\d+)["\']?/i', $content, $matches );
+        // Classic editor / shortcode: [contact-form-7 id="123" ...]
+        preg_match_all( '/\[contact-form-7[^\]]*id=["\']?(\d+)["\']?/i', $content, $sc_matches );
+        foreach ( $sc_matches[1] ?? [] as $id ) {
+            $all_ids[] = (int) $id;
+        }
 
-        foreach ( array_unique( $matches[1] ) as $form_id ) {
-            $form_id            = (int) $form_id;
-            $config[ $form_id ] = CFV_Config::get( $form_id );
+        // Block editor: <!-- wp:contact-form-7/... {"id":123,...} /-->
+        preg_match_all( '/wp:contact-form-7[^{]*\{"id":(\d+)/i', $content, $block_matches );
+        foreach ( $block_matches[1] ?? [] as $id ) {
+            $all_ids[] = (int) $id;
+        }
+
+        foreach ( array_unique( $all_ids ) as $form_id ) {
+            if ( $form_id > 0 ) {
+                $config[ $form_id ] = CFV_Config::get( $form_id );
+            }
         }
 
         return $config;

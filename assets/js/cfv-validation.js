@@ -419,7 +419,8 @@
 
         forms.forEach( ( formEl ) => {
             const wrapper = formEl.closest( '.wpcf7' );
-            const formId  = parseInt( wrapper?.dataset?.id || '0', 10 );
+            // CF7 6.x uses data-wpcf7-id (dataset.wpcf7Id); older versions used data-id.
+            const formId  = parseInt( wrapper?.dataset?.wpcf7Id || wrapper?.dataset?.id || '0', 10 );
             if ( ! formId ) return;
 
             seenFormIds[ formId ] = ( seenFormIds[ formId ] || 0 );
