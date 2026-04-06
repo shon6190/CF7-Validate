@@ -83,7 +83,13 @@ class CFV_Field_Decorator {
                     . ' data-max="' . esc_attr( $max_length ) . '"'
                     . ' data-format="' . esc_attr( $counter_format ) . '"'
                     . '></span>';
-                $html = str_replace( $error_span, $error_span . $counter, $html );
+                // Use substr_replace to replace only the FIRST occurrence —
+                // str_replace replaces all, which duplicates the counter when
+                // multiple textareas share similar error-span markup.
+                $pos = strpos( $html, $error_span );
+                if ( $pos !== false ) {
+                    $html = substr_replace( $html, $error_span . $counter, $pos, strlen( $error_span ) );
+                }
             }
 
             // ----------------------------------------------------------------
