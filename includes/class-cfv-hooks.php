@@ -22,12 +22,23 @@ class CFV_Hooks {
     private static array $validation_errors = [];
 
     /**
+     * Tracks form IDs that have rendered on the current page request.
+     * Populated in decorate_form_elements(); consumed in output_frontend_config().
+     *
+     * @var int[]
+     */
+    private static array $rendered_form_ids = [];
+
+    /**
      * Register all WP/CF7 hooks.
      */
     public static function init(): void {
         // Assets.
-        add_action( 'wp_enqueue_scripts',   [ __CLASS__, 'enqueue_frontend_assets' ] );
+        add_action( 'wp_enqueue_scripts',   [ __CLASS__, 'register_frontend_assets' ] );
         add_action( 'admin_enqueue_scripts', [ __CLASS__, 'enqueue_admin_assets' ] );
+
+        // Output cfvConfig inline script after all forms have rendered.
+        add_action( 'wp_footer', [ __CLASS__, 'output_frontend_config' ], 5 );
 
         // CF7 editor tab.
         add_filter( 'wpcf7_editor_panels', [ __CLASS__, 'register_validation_panel' ] );
@@ -37,6 +48,7 @@ class CFV_Hooks {
         add_action( 'wp_ajax_cfv_get_config',  [ __CLASS__, 'ajax_get_config' ] );
 
         // Form HTML decoration (asterisks, optional labels, error spans, counters).
+        // Also used to detect which forms rendered so scripts are enqueued on-demand.
         add_filter( 'wpcf7_form_elements', [ __CLASS__, 'decorate_form_elements' ] );
 
         // Server-side validation — intercept before CF7 sends email.
@@ -54,31 +66,24 @@ class CFV_Hooks {
     // =========================================================================
 
     /**
-     * Enqueue frontend validation assets on pages containing a CF7 shortcode.
+     * Register (but do not enqueue) frontend assets during wp_enqueue_scripts.
+     * Actual enqueuing happens in decorate_form_elements() when CF7 renders a
+     * form — this covers shortcodes in post_content, Gutenberg blocks, and
+     * do_shortcode() calls from custom templates.
      */
-    public static function enqueue_frontend_assets(): void {
-        global $post;
-
-        if ( ! is_a( $post, 'WP_Post' ) ) {
+    public static function register_frontend_assets(): void {
+        if ( is_admin() ) {
             return;
         }
 
-        $content = $post->post_content;
-        $has_cf7 = has_shortcode( $content, 'contact-form-7' )
-                || strpos( $content, 'wp:contact-form-7' ) !== false;
-
-        if ( ! $has_cf7 ) {
-            return;
-        }
-
-        wp_enqueue_style(
+        wp_register_style(
             'cfv-styles',
             CFV_PLUGIN_URL . 'assets/css/cfv-styles.css',
             [],
             CFV_VERSION
         );
 
-        wp_enqueue_script(
+        wp_register_script(
             'cfv-counter',
             CFV_PLUGIN_URL . 'assets/js/cfv-counter.js',
             [],
@@ -86,7 +91,7 @@ class CFV_Hooks {
             true
         );
 
-        wp_enqueue_script(
+        wp_register_script(
             'cfv-validation',
             CFV_PLUGIN_URL . 'assets/js/cfv-validation.js',
             [ 'cfv-counter' ],
@@ -94,78 +99,69 @@ class CFV_Hooks {
             true
         );
 
-        // Pass per-form config and helpers to JS.
-        $forms_config = self::collect_page_forms_config( $post->post_content );
+        wp_register_style(
+            'intl-tel-input',
+            CFV_PLUGIN_URL . 'assets/vendor/intl-tel-input/intlTelInput.min.css',
+            [],
+            '18.2.1'
+        );
 
-        // Enqueue intl-tel-input if any form on the page has a phone field with enable_intl.
-        $needs_intl = false;
-        foreach ( $forms_config as $fid => $fc ) {
+        wp_register_script(
+            'intl-tel-input',
+            CFV_PLUGIN_URL . 'assets/vendor/intl-tel-input/intlTelInput.min.js',
+            [],
+            '18.2.1',
+            true
+        );
+
+        wp_register_script(
+            'cfv-intl-phone',
+            CFV_PLUGIN_URL . 'assets/js/cfv-intl-phone.js',
+            [ 'intl-tel-input', 'cfv-validation' ],
+            CFV_VERSION,
+            true
+        );
+    }
+
+    /**
+     * Output cfvConfig as an inline script in wp_footer (priority 5, before
+     * footer scripts print at priority 20). Runs after all template output —
+     * including do_shortcode() calls — has completed, so $rendered_form_ids is
+     * fully populated by the time this executes.
+     */
+    public static function output_frontend_config(): void {
+        if ( empty( self::$rendered_form_ids ) ) {
+            return;
+        }
+
+        $forms_config = [];
+        $needs_intl   = false;
+
+        foreach ( array_unique( self::$rendered_form_ids ) as $form_id ) {
+            $fc                    = CFV_Config::get( $form_id );
+            $forms_config[ $form_id ] = $fc;
             foreach ( $fc['fields'] ?? [] as $field ) {
                 if ( ! empty( $field['enable_intl'] ) ) {
                     $needs_intl = true;
-                    break 2;
                 }
             }
         }
 
         if ( $needs_intl ) {
-            wp_enqueue_style(
-                'intl-tel-input',
-                CFV_PLUGIN_URL . 'assets/vendor/intl-tel-input/intlTelInput.min.css',
-                [],
-                '18.0.0'
-            );
-            wp_enqueue_script(
-                'intl-tel-input',
-                CFV_PLUGIN_URL . 'assets/vendor/intl-tel-input/intlTelInput.min.js',
-                [],
-                '18.0.0',
-                true
-            );
-            wp_enqueue_script(
-                'cfv-intl-phone',
-                CFV_PLUGIN_URL . 'assets/js/cfv-intl-phone.js',
-                [ 'intl-tel-input', 'cfv-validation' ],
-                CFV_VERSION,
-                true
-            );
+            wp_enqueue_style( 'intl-tel-input' );
+            wp_enqueue_script( 'intl-tel-input' );
+            wp_enqueue_script( 'cfv-intl-phone' );
         }
 
-        wp_localize_script( 'cfv-validation', 'cfvConfig', [
-            'forms'   => $forms_config,
-            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-        ] );
-    }
-
-    /**
-     * Collect validation config for every CF7 form shortcode on the page.
-     *
-     * @param string $content Post content to scan.
-     * @return array<int, array> Form ID → config array.
-     */
-    private static function collect_page_forms_config( string $content ): array {
-        $config  = [];
-        $all_ids = [];
-
-        // Classic editor / shortcode: [contact-form-7 id="123" ...]
-        preg_match_all( '/\[contact-form-7[^\]]*id=["\']?(\d+)["\']?/i', $content, $sc_matches );
-        foreach ( $sc_matches[1] ?? [] as $id ) {
-            $all_ids[] = (int) $id;
-        }
-
-        // Block editor: <!-- wp:contact-form-7/... {"id":123,...} /-->
-        preg_match_all( '/wp:contact-form-7[^{]*\{"id":(\d+)/i', $content, $block_matches );
-        foreach ( $block_matches[1] ?? [] as $id ) {
-            $all_ids[] = (int) $id;
-        }
-
-        foreach ( array_unique( $all_ids ) as $form_id ) {
-            if ( $form_id > 0 ) {
-                $config[ $form_id ] = CFV_Config::get( $form_id );
-            }
-        }
-
-        return $config;
+        // Attach cfvConfig before the cfv-validation script executes.
+        wp_add_inline_script(
+            'cfv-validation',
+            'var cfvConfig = ' . wp_json_encode( [
+                'forms'   => $forms_config,
+                'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+            ] ) . ';',
+            'before'
+        );
     }
 
     /**
@@ -293,6 +289,8 @@ class CFV_Hooks {
 
     /**
      * Post-process rendered CF7 form HTML to inject validation UX elements.
+     * Also enqueues frontend scripts the first time any CF7 form renders on
+     * this request, and records the form ID for cfvConfig output in wp_footer.
      *
      * @param string $form_html Rendered form HTML.
      * @return string Modified form HTML.
@@ -302,7 +300,20 @@ class CFV_Hooks {
         if ( ! $form ) {
             return $form_html;
         }
-        return CFV_Field_Decorator::decorate( $form_html, $form->id() );
+
+        $form_id = $form->id();
+
+        // Enqueue assets the first time any CF7 form renders on this page.
+        if ( ! wp_style_is( 'cfv-styles', 'enqueued' ) ) {
+            wp_enqueue_style( 'cfv-styles' );
+            wp_enqueue_script( 'cfv-counter' );
+            wp_enqueue_script( 'cfv-validation' );
+        }
+
+        // Record this form ID so output_frontend_config() can build cfvConfig.
+        self::$rendered_form_ids[] = $form_id;
+
+        return CFV_Field_Decorator::decorate( $form_html, $form_id );
     }
 
     // =========================================================================
