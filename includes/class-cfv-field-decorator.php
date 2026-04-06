@@ -9,37 +9,33 @@ class CFV_Field_Decorator {
      * empty error spans below each field, counter elements on length-limited fields.
      */
     public static function decorate( string $html, int $form_id ): string {
-        $config = CFV_Config::get( $form_id );
-        $fields = $config['fields'] ?? [];
-        $global = $config['global'] ?? [];
+        $config        = CFV_Config::get( $form_id );
+        $fields        = $config['fields'] ?? [];
+        $global        = $config['global'] ?? [];
         $show_optional = ! empty( $global['show_optional_label'] );
 
         foreach ( $fields as $field_name => $field_config ) {
-            $required      = ! empty( $field_config['required'] );
-            $label         = ! empty( $field_config['label'] )
-                ? $field_config['label']
-                : CFV_Config::generate_label( $field_name );
+            $required       = ! empty( $field_config['required'] );
             $counter_format = $field_config['counter_format'] ?? 'off';
             $max_length     = ! empty( $field_config['max_length'] ) ? (int) $field_config['max_length'] : 0;
             $max_height     = ! empty( $field_config['max_height'] ) ? (int) $field_config['max_height'] : 0;
+            $quoted         = preg_quote( $field_name, '/' );
 
-            // --- Inject asterisk or optional label next to <label> for this field ---
+            // ----------------------------------------------------------------
+            // Inject asterisk or (Optional) inside the wrapping <label>.
             //
-            // CF7's standard HTML wraps the label around the field control:
-            //   <label>Label text <span class="wpcf7-form-control-wrap" data-name="field-name">...</span></label>
-            // There is NO `for` attribute, so matching on `for="field-name"` never works.
-            // Instead, match a <label> whose content contains the CF7 wrap span with data-name="field-name",
-            // then inject between the label text and the wrap span.
+            // CF7 standard output:
+            //   <label>Label text<br>
+            //     <span class="wpcf7-form-control-wrap" data-name="field-name">...</span>
+            //   </label>
+            // Inject the badge before any trailing <br>/whitespace so it sits
+            // inline with the label text, not on a new line after the <br>.
+            // ----------------------------------------------------------------
             if ( $required || $show_optional ) {
-                $quoted        = preg_quote( $field_name, '/' );
-                $inject        = $required
+                $inject = $required
                     ? '<span class="cfv-required-asterisk" aria-hidden="true">*</span>'
                     : '<span class="cfv-optional-label">(Optional)</span>';
 
-                // Pattern: <label ...> [label text] <span ... data-name="field-name" ...>
-                // Capture: $1 = <label...>, $2 = text before wrap span, $3 = the wrap span opening.
-                // Inject the badge before any trailing <br>/whitespace so it sits inline
-                // with the label text rather than on a new line after the <br>.
                 $label_pattern = '/(<label\b[^>]*>)((?:(?!<\/label>)[\s\S])*?)(<span\b[^>]*\bdata-name=["\']?' . $quoted . '["\']?)/si';
                 $html = preg_replace_callback( $label_pattern, function ( $m ) use ( $inject ) {
                     $text     = preg_replace( '/(\s*<br\s*\/?>\s*)+$/i', '', $m[2] );
@@ -48,59 +44,102 @@ class CFV_Field_Decorator {
                 }, $html );
             }
 
-            // --- Inject empty error span after the field input/textarea/select ---
+            // ----------------------------------------------------------------
+            // Inject empty error span after the CF7 control-wrap span.
+            //
+            // CF7 wraps EVERY field type in:
+            //   <span class="wpcf7-form-control-wrap" data-name="field-name">
+            //     [input | textarea | select | checkbox group | radio group | file]
+            //   </span>
+            //
+            // Injecting after this outer span works universally — no more
+            // special-casing per element type. Regex cannot count nested spans,
+            // so we scan character-by-character after the opening tag.
+            // ----------------------------------------------------------------
             $error_span = '<span class="cfv-error-tip" data-field="' . esc_attr( $field_name ) . '" role="alert" aria-live="polite"></span>';
+            $html       = self::inject_after_control_wrap( $html, $field_name, $error_span );
 
-            // Textarea has separate open/close tags — inject after </textarea> to avoid
-            // the span appearing as literal text content inside the element.
-            // textarea and select have open+close tags — match the full element and
-            // inject after the closing tag to avoid the span landing inside as content.
-            // input is self-closing so it can be matched by its opening tag alone.
-            $quoted = preg_quote( $field_name, '/' );
-
-            if ( preg_match( '/(<textarea\b[^>]*\bname=["\']?' . $quoted . '["\']?)/si', $html ) ) {
-                $html = preg_replace(
-                    '/(<textarea\b[^>]*\bname=["\']?' . $quoted . '["\']?[^>]*>[\s\S]*?<\/textarea>)/si',
-                    '$1' . $error_span,
-                    $html
-                );
-            } elseif ( preg_match( '/(<select\b[^>]*\bname=["\']?' . $quoted . '["\']?)/si', $html ) ) {
-                $html = preg_replace(
-                    '/(<select\b[^>]*\bname=["\']?' . $quoted . '["\']?[^>]*>[\s\S]*?<\/select>)/si',
-                    '$1' . $error_span,
-                    $html
-                );
-            } else {
-                // input — self-closing, inject after the opening tag.
-                $html = preg_replace(
-                    '/(<input\b[^>]*\bname=["\']?' . $quoted . '["\']?[^>]*\/?>)/si',
-                    '$1' . $error_span,
-                    $html
-                );
-            }
-
-            // --- Inject counter element below textarea/text fields with max_length ---
+            // ----------------------------------------------------------------
+            // Counter element (appended after the error span already injected).
+            // ----------------------------------------------------------------
             if ( $counter_format !== 'off' && $max_length > 0 ) {
-                $counter = '<span class="cfv-counter" data-field="' . esc_attr( $field_name ) . '" data-max="' . esc_attr( $max_length ) . '" data-format="' . esc_attr( $counter_format ) . '"></span>';
-                // Insert after the error span we just added.
+                $counter = '<span class="cfv-counter"'
+                    . ' data-field="' . esc_attr( $field_name ) . '"'
+                    . ' data-max="' . esc_attr( $max_length ) . '"'
+                    . ' data-format="' . esc_attr( $counter_format ) . '"'
+                    . '></span>';
                 $html = str_replace( $error_span, $error_span . $counter, $html );
             }
 
-            // --- Apply maxlength and max-height attributes to textarea ---
+            // ----------------------------------------------------------------
+            // Apply maxlength (overriding CF7's own) and max-height on textarea.
+            // ----------------------------------------------------------------
             if ( $max_length > 0 || $max_height > 0 ) {
-                $ta_pattern = '/(<textarea\b[^>]*\bname=["\']?' . preg_quote( $field_name, '/' ) . '["\']?[^>]*)(>)/si';
-                $html = preg_replace_callback( $ta_pattern, function ( $m ) use ( $max_length, $max_height ) {
-                    // Strip any maxlength CF7 already put on the element so ours wins.
-                    $tag = preg_replace( '/\s+maxlength=["\']?\d+["\']?/i', '', $m[1] );
-                    $attrs = '';
-                    if ( $max_length > 0 ) {
-                        $attrs .= ' maxlength="' . esc_attr( $max_length ) . '"';
-                    }
-                    if ( $max_height > 0 ) {
-                        $attrs .= ' style="max-height:' . esc_attr( $max_height ) . 'px;overflow-y:auto;"';
-                    }
-                    return $tag . $attrs . $m[2];
-                }, $html );
+                $html = preg_replace_callback(
+                    '/(<textarea\b[^>]*\bname=["\']?' . $quoted . '["\']?[^>]*)(>)/si',
+                    function ( $m ) use ( $max_length, $max_height ) {
+                        $tag   = preg_replace( '/\s+maxlength=["\']?\d+["\']?/i', '', $m[1] );
+                        $attrs = '';
+                        if ( $max_length > 0 ) {
+                            $attrs .= ' maxlength="' . esc_attr( $max_length ) . '"';
+                        }
+                        if ( $max_height > 0 ) {
+                            $attrs .= ' style="max-height:' . esc_attr( $max_height ) . 'px;overflow-y:auto;"';
+                        }
+                        return $tag . $attrs . $m[2];
+                    },
+                    $html
+                );
+            }
+        }
+
+        return $html;
+    }
+
+    /**
+     * Inject $inject immediately after the closing </span> of the CF7
+     * control-wrap span (<span ... data-name="field-name">) by counting
+     * nested <span> / </span> pairs — regex alone cannot handle nesting.
+     *
+     * Works for all CF7 field types: text, textarea, select, checkbox groups,
+     * radio groups, and file inputs.
+     */
+    private static function inject_after_control_wrap( string $html, string $field_name, string $inject ): string {
+        $quoted = preg_quote( $field_name, '/' );
+
+        // Find the opening control-wrap span for this field.
+        if ( ! preg_match(
+            '/<span\b[^>]*\bdata-name=["\']?' . $quoted . '["\']?[^>]*>/si',
+            $html,
+            $match,
+            PREG_OFFSET_CAPTURE
+        ) ) {
+            return $html; // Field not in HTML — nothing to do.
+        }
+
+        $open_tag_end = $match[0][1] + strlen( $match[0][0] ); // position after opening tag
+        $pos          = $open_tag_end;
+        $depth        = 1;
+        $len          = strlen( $html );
+
+        while ( $depth > 0 && $pos < $len ) {
+            $next_open  = stripos( $html, '<span',  $pos );
+            $next_close = stripos( $html, '</span', $pos );
+
+            if ( $next_open !== false && ( $next_close === false || $next_open < $next_close ) ) {
+                // Another opening span comes first — go deeper.
+                $depth++;
+                $pos = $next_open + 5; // skip '<span'
+            } elseif ( $next_close !== false ) {
+                $depth--;
+                $close_end = stripos( $html, '>', $next_close ) + 1;
+                if ( $depth === 0 ) {
+                    // This is the matching closing tag — inject right after it.
+                    return substr( $html, 0, $close_end ) . $inject . substr( $html, $close_end );
+                }
+                $pos = $close_end;
+            } else {
+                break; // Malformed HTML — bail.
             }
         }
 
