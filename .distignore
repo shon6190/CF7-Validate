@@ -1,0 +1,32 @@
+# Files/folders excluded from the WordPress.org SVN deployment
+# Used by tools like wp-org-deploy, 10up/action-wordpress-plugin-deploy, etc.
+
+.git
+.gitignore
+.distignore
+
+# Dev tooling
+node_modules
+src
+package.json
+package-lock.json
+
+# Internal/dev docs
+CLAUDE.md
+docs
+QA Checklist - Sheet1.csv
+
+# IDE
+.vscode
+.idea
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs / env
+*.log
+.env
+.env.local

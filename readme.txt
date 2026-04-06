@@ -42,7 +42,7 @@ All validation runs both **client-side** (instant feedback) and **server-side** 
 
 == Installation ==
 
-1. Upload the `contact-form-validation` folder to `/wp-content/plugins/`
+1. Upload the `cf7-validate` folder to `/wp-content/plugins/`
 2. Activate the plugin through the **Plugins** menu in WordPress
 3. Make sure Contact Form 7 is installed and active
 4. Open any CF7 form editor — a new **Validation** tab will appear
