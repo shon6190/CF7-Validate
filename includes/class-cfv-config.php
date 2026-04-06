@@ -183,7 +183,7 @@ class CFV_Config {
             if ( is_bool( $value ) ) {
                 $out[ $key ] = (bool) $value;
             } elseif ( is_int( $value ) || ( is_string( $value ) && is_numeric( $value ) && strpos( $value, '.' ) === false ) ) {
-                $out[ $key ] = absint( $value );
+                $out[ $key ] = intval( $value );
             } elseif ( is_float( $value ) ) {
                 $out[ $key ] = (float) $value;
             } elseif ( is_string( $value ) ) {
