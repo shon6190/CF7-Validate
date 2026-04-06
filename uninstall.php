@@ -1,6 +1,6 @@
 <?php
 /**
- * Uninstall handler for CF7 Validate Pro.
+ * Uninstall handler for CF7 Validate.
  *
  * Removes all per-form validation configuration stored as post meta
  * when the plugin is deleted via the WordPress admin.

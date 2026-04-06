@@ -1,6 +1,6 @@
 <?php
 /**
- * Configuration class for CF7 Validate Pro.
+ * Configuration class for CF7 Validate.
  *
  * Handles reading, writing, and merging of per-form validation config
  * stored as post meta on CF7 form posts.
@@ -125,7 +125,7 @@ class CFV_Config {
             $decoded = json_decode( $saved_json, true );
             if ( JSON_ERROR_NONE !== json_last_error() ) {
                 // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-                error_log( sprintf( 'CF7 Validate Pro: malformed config JSON for form %d — %s', $form_id, json_last_error_msg() ) );
+                error_log( sprintf( 'CF7 Validate: malformed config JSON for form %d — %s', $form_id, json_last_error_msg() ) );
             } elseif ( is_array( $decoded ) ) {
                 $saved = $decoded;
             }
@@ -161,7 +161,7 @@ class CFV_Config {
         $json = wp_json_encode( $sanitized );
         if ( false === $json ) {
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-            error_log( sprintf( 'CF7 Validate Pro: failed to encode config for form %d', $form_id ) );
+            error_log( sprintf( 'CF7 Validate: failed to encode config for form %d', $form_id ) );
             return;
         }
         update_post_meta( $form_id, self::META_KEY, $json );

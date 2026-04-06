@@ -1,6 +1,6 @@
 <?php
 /**
- * Hooks registration for CF7 Validate Pro.
+ * Hooks registration for CF7 Validate.
  *
  * Registers all WordPress and CF7 action/filter hooks. Callbacks are
  * fully implemented here or delegated to specialist classes.
@@ -216,7 +216,7 @@ class CFV_Hooks {
      */
     public static function register_validation_panel( array $panels ): array {
         $panels['validation'] = [
-            'title'    => __( 'Validation', 'cf7-validate-pro' ),
+            'title'    => __( 'Validation', 'cf7-validate' ),
             'callback' => [ __CLASS__, 'render_validation_panel' ],
         ];
         return $panels;
@@ -361,7 +361,7 @@ class CFV_Hooks {
         }
 
         $response['status']  = 'validation_failed';
-        $response['message'] = __( 'Please correct the errors below.', 'cf7-validate-pro' );
+        $response['message'] = __( 'Please correct the errors below.', 'cf7-validate' );
 
         // Build invalid-fields array in the format CF7 expects.
         $invalid_fields = [];

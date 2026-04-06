@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       CF7 Validate Pro
+ * Plugin Name:       CF7 Validate
  * Plugin URI:        https://github.com/shon6190/CF7-Validate-Pro
  * Description:       Comprehensive validation addon for Contact Form 7.
  * Version:           1.0.0
@@ -11,7 +11,7 @@
  * Author URI:        https://github.com/shon6190
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       cf7-validate-pro
+ * Text Domain:       cf7-validate
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

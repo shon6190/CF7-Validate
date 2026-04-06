@@ -1,4 +1,4 @@
-=== CF7 Validate Pro ===
+=== CF7 Validate ===
 Contributors:      shon6190
 Tags:              contact form 7, cf7, validation, form validation, phone validation
 Requires at least: 5.9
@@ -13,7 +13,7 @@ Comprehensive client-side and server-side validation addon for Contact Form 7, c
 
 == Description ==
 
-CF7 Validate Pro adds powerful, flexible validation to Contact Form 7 forms — without touching your form shortcodes. Configure rules per field directly inside the CF7 editor using the new **Validation** tab.
+CF7 Validate adds powerful, flexible validation to Contact Form 7 forms — without touching your form shortcodes. Configure rules per field directly inside the CF7 editor using the new **Validation** tab.
 
 **Features:**
 
@@ -56,7 +56,7 @@ Yes — text, name, email, phone (tel), number, URL, textarea, select, checkbox,
 
 = Do I need to change my CF7 shortcodes? =
 
-No. CF7 Validate Pro works by post-processing the rendered form HTML and reading the CF7 form editor configuration. Your shortcodes stay unchanged.
+No. CF7 Validate works by post-processing the rendered form HTML and reading the CF7 form editor configuration. Your shortcodes stay unchanged.
 
 = Does validation run on the server too? =
 
@@ -64,7 +64,7 @@ Yes. Client-side validation provides instant feedback. Server-side validation ru
 
 = What happens if Contact Form 7 is deactivated? =
 
-CF7 Validate Pro will automatically deactivate itself and show an admin notice asking you to install Contact Form 7.
+CF7 Validate will automatically deactivate itself and show an admin notice asking you to install Contact Form 7.
 
 = Is the international phone input (intl-tel-input) free? =
 
