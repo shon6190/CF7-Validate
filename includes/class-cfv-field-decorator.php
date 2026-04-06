@@ -24,18 +24,22 @@ class CFV_Field_Decorator {
             $max_height     = ! empty( $field_config['max_height'] ) ? (int) $field_config['max_height'] : 0;
 
             // --- Inject asterisk or optional label next to <label> for this field ---
-            $label_pattern = '/<label\b[^>]*\bfor=["\']?' . preg_quote( $field_name, '/' ) . '["\']?[^>]*>(.*?)<\/label>/si';
+            //
+            // CF7's standard HTML wraps the label around the field control:
+            //   <label>Label text <span class="wpcf7-form-control-wrap" data-name="field-name">...</span></label>
+            // There is NO `for` attribute, so matching on `for="field-name"` never works.
+            // Instead, match a <label> whose content contains the CF7 wrap span with data-name="field-name",
+            // then inject between the label text and the wrap span.
+            if ( $required || $show_optional ) {
+                $quoted        = preg_quote( $field_name, '/' );
+                $inject        = $required
+                    ? '<span class="cfv-required-asterisk" aria-hidden="true">*</span>'
+                    : '<span class="cfv-optional-label">(Optional)</span>';
 
-            if ( $required ) {
-                $asterisk = '<span class="cfv-required-asterisk" aria-hidden="true">*</span>';
-                $html = preg_replace_callback( $label_pattern, function ( $m ) use ( $asterisk ) {
-                    return str_replace( $m[1], $m[1] . ' ' . $asterisk, $m[0] );
-                }, $html );
-            } elseif ( $show_optional ) {
-                $optional = '<span class="cfv-optional-label">(Optional)</span>';
-                $html = preg_replace_callback( $label_pattern, function ( $m ) use ( $optional ) {
-                    return str_replace( $m[1], $m[1] . ' ' . $optional, $m[0] );
-                }, $html );
+                // Pattern: <label ...> [label text] <span ... data-name="field-name" ...>
+                // Capture: $1 = <label...>, $2 = text before wrap span, $3 = the wrap span opening.
+                $label_pattern = '/(<label\b[^>]*>)((?:(?!<\/label>)[\s\S])*?)(<span\b[^>]*\bdata-name=["\']?' . $quoted . '["\']?)/si';
+                $html = preg_replace( $label_pattern, '$1$2 ' . $inject . ' $3', $html );
             }
 
             // --- Inject empty error span after the field input/textarea/select ---
@@ -43,7 +47,7 @@ class CFV_Field_Decorator {
 
             // Textarea has separate open/close tags — inject after </textarea> to avoid
             // the span appearing as literal text content inside the element.
-            $quoted = preg_quote( $field_name, '/' );
+            $quoted           = preg_quote( $field_name, '/' );
             $textarea_pattern = '/(<textarea\b[^>]*\bname=["\']?' . $quoted . '["\']?[^>]*>[\s\S]*?<\/textarea>)/si';
             if ( preg_match( $textarea_pattern, $html ) ) {
                 $html = preg_replace( $textarea_pattern, '$1' . $error_span, $html );
