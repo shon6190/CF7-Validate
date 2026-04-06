@@ -57,7 +57,7 @@ class CFV_Validator {
             if ( $type === 'checkbox' || $type === 'radio' ) {
                 $group_values = (array) ( $submission[ $field_name ] ?? $submission[ "{$field_name}[]" ] ?? [] );
                 if ( empty( $group_values ) ) {
-                    return "$label — please select at least one option";
+                    return "Please select at least one $label";
                 }
             } elseif ( $type === 'select' ) {
                 $placeholder = $config['placeholder_value'] ?? '';

@@ -40,14 +40,14 @@
     display: block;
 }
 
-/* Highlight the field itself when invalid */
-.wpcf7-form-control.wpcf7-not-valid,
-input.cfv-invalid,
-textarea.cfv-invalid,
-select.cfv-invalid {
-    border-color: #d63638;
-    outline-color: #d63638;
+/* intl-tel-input phone fields: show error inline beside the input */
+.cfv-error-tip--inline:not(:empty) {
+    display: inline-block;
+    vertical-align: middle;
+    margin-top: 0;
+    margin-left: 10px;
 }
+
 
 /* =============================================================================
    Character counter

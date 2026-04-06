@@ -135,22 +135,10 @@ class CFV_Hooks {
         }
 
         $forms_config = [];
-        $needs_intl   = false;
 
         foreach ( array_unique( self::$rendered_form_ids ) as $form_id ) {
-            $fc                    = CFV_Config::get( $form_id );
+            $fc                       = CFV_Config::get( $form_id );
             $forms_config[ $form_id ] = $fc;
-            foreach ( $fc['fields'] ?? [] as $field ) {
-                if ( ! empty( $field['enable_intl'] ) ) {
-                    $needs_intl = true;
-                }
-            }
-        }
-
-        if ( $needs_intl ) {
-            wp_enqueue_style( 'intl-tel-input' );
-            wp_enqueue_script( 'intl-tel-input' );
-            wp_enqueue_script( 'cfv-intl-phone' );
         }
 
         // Attach cfvConfig before the cfv-validation script executes.
@@ -314,8 +302,11 @@ class CFV_Hooks {
         // Enqueue assets the first time any CF7 form renders on this page.
         if ( ! wp_style_is( 'cfv-styles', 'enqueued' ) ) {
             wp_enqueue_style( 'cfv-styles' );
+            wp_enqueue_style( 'intl-tel-input' );
             wp_enqueue_script( 'cfv-counter' );
             wp_enqueue_script( 'cfv-validation' );
+            wp_enqueue_script( 'intl-tel-input' );
+            wp_enqueue_script( 'cfv-intl-phone' );
         }
 
         // Record this form ID so output_frontend_config() can build cfvConfig.

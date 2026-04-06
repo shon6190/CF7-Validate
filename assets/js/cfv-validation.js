@@ -55,12 +55,13 @@
             notNegative:     `${ label } must be a positive number`,
             notZero:         `${ label } cannot be zero`,
             phoneBasic:      `${ label } must be a valid phone number`,
+            phoneNumeric:    `${ label } — only numbers are allowed`,
             noSpecialChars:  `${ label } must not contain special characters`,
             noEmoji:         `${ label } must not contain emoji`,
             fileType:        `${ label } accepts ${ config.allowed_types } files only`,
             fileSize:        `${ label } must be under ${ config.max_size_mb }MB`,
             selectRequired:  `${ label } is required`,
-            checkboxRequired:`${ label } — please select at least one option`,
+            checkboxRequired:`Please select at least one ${ label }`,
             securityPattern: `${ label } contains invalid characters`,
         };
         return messages[ rule ] || `${ label } is invalid`;
@@ -71,14 +72,38 @@
     // =========================================================================
 
     function validateField( fieldName, fieldEl, config, itiInstance, scope ) {
-        const type    = config.type || 'text';
-        const label   = config.label || toLabel( fieldName );
-        let   value   = fieldEl ? fieldEl.value : '';
+        const type  = config.type || 'text';
+        const label = config.label || toLabel( fieldName );
 
-        // For phone with intl-tel-input, use full E.164 number.
-        if ( itiInstance ) {
-            value = itiInstance.getNumber() || '';
+        // ── intl-tel-input phone: handle as a complete self-contained block ──
+        if ( type === 'tel' && itiInstance ) {
+            const rawValue = ( fieldEl ? fieldEl.value : '' ).trim();
+
+            // Reject alphabetic characters before anything else.
+            if ( /[a-zA-Z]/.test( rawValue ) ) {
+                return { valid: false, message: buildMessage( 'phoneNumeric', label, config ) };
+            }
+
+            // Use the subscriber digits the user typed (rawValue), not iti.getNumber()
+            // which requires utils.js to be loaded.
+            const digits  = rawValue.replace( /\D/g, '' );
+            const isEmpty = rawValue === '';
+
+            if ( config.required && isEmpty ) {
+                return { valid: false, message: buildMessage( 'required', label, config ) };
+            }
+            if ( isEmpty ) return { valid: true };
+
+            const min = parseInt( config.min_length || 7, 10 );
+            const max = parseInt( config.max_length || 15, 10 );
+            if ( digits.length < min || digits.length > max ) {
+                return { valid: false, message: buildMessage( 'phoneBasic', label, config ) };
+            }
+            return { valid: true };
         }
+
+        // ── All other field types ─────────────────────────────────────────────
+        const value = fieldEl ? fieldEl.value : '';
 
         // Required check.
         if ( config.required ) {
@@ -123,16 +148,11 @@
         }
 
         if ( type === 'tel' ) {
-            if ( ! itiInstance ) {
-                // Standard phone validation.
-                if ( ! Rules.phoneBasic( value, config.min_length || 7, config.max_length || 15 ) )
-                    return { valid: false, message: buildMessage( 'phoneBasic', label, config ) };
-            } else {
-                // intl-tel-input: validate E.164 format.
-                const digits = value.replace( /\D/g, '' );
-                if ( digits.length < ( config.min_length || 7 ) || digits.length > ( config.max_length || 15 ) )
-                    return { valid: false, message: buildMessage( 'phoneBasic', label, config ) };
-            }
+            // Standard phone validation (no intl-tel-input).
+            if ( /[a-zA-Z]/.test( value ) )
+                return { valid: false, message: buildMessage( 'phoneNumeric', label, config ) };
+            if ( ! Rules.phoneBasic( value, config.min_length || 7, config.max_length || 15 ) )
+                return { valid: false, message: buildMessage( 'phoneBasic', label, config ) };
         }
 
         if ( type === 'text' || type === 'name' || type === 'textarea' ) {

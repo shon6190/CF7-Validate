@@ -36,12 +36,27 @@ class CFV_Field_Decorator {
                     ? '<span class="cfv-required-asterisk" aria-hidden="true">*</span>'
                     : '<span class="cfv-optional-label">(Optional)</span>';
 
+                // Try to inject inside a wrapping <label> that contains the control-wrap span.
+                // This works for standard text/textarea/select fields where CF7 wraps the
+                // label around the entire field including the <span data-name="...">.
                 $label_pattern = '/(<label\b[^>]*>)((?:(?!<\/label>)[\s\S])*?)(<span\b[^>]*\bdata-name=["\']?' . $quoted . '["\']?)/si';
-                $html = preg_replace_callback( $label_pattern, function ( $m ) use ( $inject ) {
+                $html_before   = $html;
+                $html          = preg_replace_callback( $label_pattern, function ( $m ) use ( $inject ) {
                     $text     = preg_replace( '/(\s*<br\s*\/?>\s*)+$/i', '', $m[2] );
                     $trailing = substr( $m[2], strlen( $text ) );
                     return $m[1] . $text . ' ' . $inject . $trailing . $m[3];
                 }, $html );
+
+                // Fallback for radio/checkbox groups: CF7 renders no outer wrapping label —
+                // only per-option labels inside <span class="wpcf7-list-item">.
+                // Inject the badge immediately before the control-wrap opening tag so it
+                // appears as a group label above/beside the options.
+                if ( $html === $html_before ) {
+                    // Consume any <br> + whitespace that immediately precedes the
+                    // control-wrap span so the badge stays inline, not on its own line.
+                    $wrap_pattern = '/(\s*<br\s*\/?>\s*)?(<span\b[^>]*\bdata-name=["\']?' . $quoted . '["\']?[^>]*>)/si';
+                    $html         = preg_replace( $wrap_pattern, ' ' . $inject . ' $2', $html, 1 );
+                }
             }
 
             // ----------------------------------------------------------------
