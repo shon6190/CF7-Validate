@@ -62,18 +62,19 @@ class CFV_Field_Decorator {
 
             // --- Apply maxlength and max-height attributes to textarea ---
             if ( $max_length > 0 || $max_height > 0 ) {
-                $attrs = '';
-                if ( $max_length > 0 ) {
-                    $attrs .= ' maxlength="' . esc_attr( $max_length ) . '"';
-                }
-                if ( $max_height > 0 ) {
-                    $attrs .= ' style="max-height:' . esc_attr( $max_height ) . 'px;overflow-y:auto;"';
-                }
-                $html = preg_replace(
-                    '/(<textarea\b[^>]*\bname=["\']?' . preg_quote( $field_name, '/' ) . '["\']?[^>]*)(>)/si',
-                    '$1' . $attrs . '$2',
-                    $html
-                );
+                $ta_pattern = '/(<textarea\b[^>]*\bname=["\']?' . preg_quote( $field_name, '/' ) . '["\']?[^>]*)(>)/si';
+                $html = preg_replace_callback( $ta_pattern, function ( $m ) use ( $max_length, $max_height ) {
+                    // Strip any maxlength CF7 already put on the element so ours wins.
+                    $tag = preg_replace( '/\s+maxlength=["\']?\d+["\']?/i', '', $m[1] );
+                    $attrs = '';
+                    if ( $max_length > 0 ) {
+                        $attrs .= ' maxlength="' . esc_attr( $max_length ) . '"';
+                    }
+                    if ( $max_height > 0 ) {
+                        $attrs .= ' style="max-height:' . esc_attr( $max_height ) . 'px;overflow-y:auto;"';
+                    }
+                    return $tag . $attrs . $m[2];
+                }, $html );
             }
         }
 
