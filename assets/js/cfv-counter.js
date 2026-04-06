@@ -9,8 +9,11 @@
 
             const form  = counter.closest( 'form' );
             const root  = form || document;
-            const field = root.querySelector( `[name="${ fieldName }"]` )
-                       || root.querySelector( `[name="${ fieldName }[]"]` );
+            // Use the CSS 'i' flag for case-insensitive name matching —
+            // sanitize_key() lowercases field names in PHP config but CF7
+            // may preserve the original case in the HTML name attribute.
+            const field = root.querySelector( `[name="${ fieldName }" i]` )
+                       || root.querySelector( `[name="${ fieldName }[]" i]` );
             if ( ! field || ! max ) return;
 
             function update() {

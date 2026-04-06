@@ -25,7 +25,7 @@
             Object.entries( fields ).forEach( ( [ fieldName, config ] ) => {
                 if ( ! config.enable_intl ) return;
 
-                const input = formEl.querySelector( `[name="${ fieldName }"]` );
+                const input = formEl.querySelector( `[name="${ fieldName }" i]` );
                 if ( ! input ) return;
 
                 const iti = intlTelInput( input, {

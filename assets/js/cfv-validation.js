@@ -113,7 +113,7 @@
         // Required check.
         if ( config.required ) {
             if ( type === 'checkbox' || type === 'radio' ) {
-                const group = Array.from( ( scope || document ).querySelectorAll( `[name="${ fieldName }"], [name="${ fieldName }[]"]` ) );
+                const group = Array.from( ( scope || document ).querySelectorAll( `[name="${ fieldName }" i], [name="${ fieldName }[]" i]` ) );
                 if ( ! Rules.checkboxRequired( group ) ) {
                     return { valid: false, message: buildMessage( 'checkboxRequired', label, config ) };
                 }
@@ -269,7 +269,7 @@
         const fieldConfigs = formConfig.fields || {};
 
         function getFieldEl( name ) {
-            return formEl.querySelector( `[name="${ name }"]` ) || formEl.querySelector( `[name="${ name }[]"]` );
+            return formEl.querySelector( `[name="${ name }" i]` ) || formEl.querySelector( `[name="${ name }[]" i]` );
         }
 
         function runFieldValidation( name ) {

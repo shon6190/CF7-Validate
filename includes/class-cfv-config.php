@@ -153,7 +153,9 @@ class CFV_Config {
         ];
 
         foreach ( $config['fields'] ?? [] as $field_name => $field_config ) {
-            $clean_name                         = sanitize_key( $field_name );
+            // Preserve original case — sanitize_key() lowercases, which breaks
+            // matching against CF7 field names that use uppercase letters.
+            $clean_name                         = preg_replace( '/[^a-zA-Z0-9_\-]/', '', $field_name );
             $sanitized['fields'][ $clean_name ] = self::sanitize_field_config( (array) $field_config );
         }
 
