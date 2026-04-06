@@ -38,8 +38,14 @@ class CFV_Field_Decorator {
 
                 // Pattern: <label ...> [label text] <span ... data-name="field-name" ...>
                 // Capture: $1 = <label...>, $2 = text before wrap span, $3 = the wrap span opening.
+                // Inject the badge before any trailing <br>/whitespace so it sits inline
+                // with the label text rather than on a new line after the <br>.
                 $label_pattern = '/(<label\b[^>]*>)((?:(?!<\/label>)[\s\S])*?)(<span\b[^>]*\bdata-name=["\']?' . $quoted . '["\']?)/si';
-                $html = preg_replace( $label_pattern, '$1$2 ' . $inject . ' $3', $html );
+                $html = preg_replace_callback( $label_pattern, function ( $m ) use ( $inject ) {
+                    $text     = preg_replace( '/(\s*<br\s*\/?>\s*)+$/i', '', $m[2] );
+                    $trailing = substr( $m[2], strlen( $text ) );
+                    return $m[1] . $text . ' ' . $inject . $trailing . $m[3];
+                }, $html );
             }
 
             // --- Inject empty error span after the field input/textarea/select ---
