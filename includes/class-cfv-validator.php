@@ -150,6 +150,11 @@ class CFV_Validator {
                     return "$label must not contain special characters";
                 }
             }
+            if ( isset( $config['allow_emoji'] ) && ! $config['allow_emoji'] ) {
+                if ( preg_match( '/[\x{1F000}-\x{1FFFF}]/u', $value ) ) {
+                    return "$label must not contain emoji";
+                }
+            }
             if ( $type === 'textarea' && ! empty( $config['security_sanitize'] ) ) {
                 $stripped = self::strip_dangerous_patterns( $value );
                 if ( $stripped !== $value ) {
