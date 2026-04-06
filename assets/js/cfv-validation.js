@@ -171,8 +171,6 @@
         if ( type === 'text' || type === 'name' || type === 'textarea' ) {
             if ( config.alpha_only && ! Rules.alphaOnly( value ) )
                 return { valid: false, message: buildMessage( 'alphaOnly', label, config ) };
-            if ( config.no_leading_spaces && ! Rules.noLeadingSpaces( value ) )
-                return { valid: false, message: buildMessage( 'noLeadingSpaces', label, config ) };
             if ( config.min_length && ! Rules.minLength( value, config.min_length ) )
                 return { valid: false, message: buildMessage( 'minLength', label, config ) };
             if ( config.max_length && ! Rules.maxLength( value, config.max_length ) )

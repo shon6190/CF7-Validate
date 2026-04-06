@@ -6,7 +6,6 @@ export default function TextRules( { rules, onChange } ) {
         <div className="cfv-rules-group">
             <TextControl label="Min characters" type="number" value={ rules.min_length ?? '' } onChange={ v => set( 'min_length', v ) } />
             <TextControl label="Max characters" type="number" value={ rules.max_length ?? '' } onChange={ v => set( 'max_length', v ) } />
-            <ToggleControl label="No leading spaces" checked={ !! rules.no_leading_spaces } onChange={ v => set( 'no_leading_spaces', v ) } />
             <ToggleControl label="Allow special characters" checked={ rules.allow_special_chars !== false } onChange={ v => set( 'allow_special_chars', v ) } />
             <ToggleControl label="Allow emoji / Unicode" checked={ rules.allow_emoji !== false } onChange={ v => set( 'allow_emoji', v ) } />
             <ToggleControl label="Collapse consecutive whitespace" checked={ rules.collapse_whitespace !== false } onChange={ v => set( 'collapse_whitespace', v ) } />

@@ -1,7 +1,7 @@
 // Mirror of PHP CFV_Config::get_field_type_defaults per type.
 export const FIELD_TYPE_DEFAULTS = {
-    text:     { required: false, min_length: '', max_length: '', alpha_only: false, no_leading_spaces: false, allow_special_chars: true, allow_emoji: true, collapse_whitespace: true, input_mask: '', counter_format: 'off' },
-    name:     { required: false, min_length: 2, max_length: 56, alpha_only: true, no_leading_spaces: true, allow_special_chars: false, allow_emoji: false, collapse_whitespace: true, input_mask: '', counter_format: 'off' },
+    text:     { required: false, min_length: '', max_length: '', alpha_only: false, allow_special_chars: true, allow_emoji: true, collapse_whitespace: true, input_mask: '', counter_format: 'off' },
+    name:     { required: false, min_length: 2, max_length: 56, alpha_only: true, allow_special_chars: false, allow_emoji: false, collapse_whitespace: true, input_mask: '', counter_format: 'off' },
     email:    { required: false, trim_whitespace: true },
     tel:      { required: false, min_length: 7, max_length: 15, enable_intl: false, default_country: 'auto' },
     number:   { required: false, min_value: '', max_value: '', allow_negative: false, allow_zero: true },

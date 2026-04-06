@@ -142,9 +142,6 @@ class CFV_Validator {
             if ( ! empty( $config['alpha_only'] ) && ! preg_match( '/^[a-zA-Z\s]+$/', $value ) ) {
                 return "$label must contain letters only";
             }
-            if ( ! empty( $config['no_leading_spaces'] ) && ltrim( $value ) !== $value ) {
-                return "$label must not start with a space";
-            }
             if ( ! empty( $config['min_length'] ) && mb_strlen( trim( $value ) ) < (int) $config['min_length'] ) {
                 return "$label must be at least {$config['min_length']} characters";
             }
