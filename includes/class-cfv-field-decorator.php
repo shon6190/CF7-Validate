@@ -53,14 +53,30 @@ class CFV_Field_Decorator {
 
             // Textarea has separate open/close tags — inject after </textarea> to avoid
             // the span appearing as literal text content inside the element.
-            $quoted           = preg_quote( $field_name, '/' );
-            $textarea_pattern = '/(<textarea\b[^>]*\bname=["\']?' . $quoted . '["\']?[^>]*>[\s\S]*?<\/textarea>)/si';
-            if ( preg_match( $textarea_pattern, $html ) ) {
-                $html = preg_replace( $textarea_pattern, '$1' . $error_span, $html );
+            // textarea and select have open+close tags — match the full element and
+            // inject after the closing tag to avoid the span landing inside as content.
+            // input is self-closing so it can be matched by its opening tag alone.
+            $quoted = preg_quote( $field_name, '/' );
+
+            if ( preg_match( '/(<textarea\b[^>]*\bname=["\']?' . $quoted . '["\']?)/si', $html ) ) {
+                $html = preg_replace(
+                    '/(<textarea\b[^>]*\bname=["\']?' . $quoted . '["\']?[^>]*>[\s\S]*?<\/textarea>)/si',
+                    '$1' . $error_span,
+                    $html
+                );
+            } elseif ( preg_match( '/(<select\b[^>]*\bname=["\']?' . $quoted . '["\']?)/si', $html ) ) {
+                $html = preg_replace(
+                    '/(<select\b[^>]*\bname=["\']?' . $quoted . '["\']?[^>]*>[\s\S]*?<\/select>)/si',
+                    '$1' . $error_span,
+                    $html
+                );
             } else {
-                // input and select: self-closing or single opening tag — inject after it.
-                $input_pattern = '/(<(?:input|select)\b[^>]*\bname=["\']?' . $quoted . '["\']?[^>]*\/?>)/si';
-                $html = preg_replace( $input_pattern, '$1' . $error_span, $html );
+                // input — self-closing, inject after the opening tag.
+                $html = preg_replace(
+                    '/(<input\b[^>]*\bname=["\']?' . $quoted . '["\']?[^>]*\/?>)/si',
+                    '$1' . $error_span,
+                    $html
+                );
             }
 
             // --- Inject counter element below textarea/text fields with max_length ---
