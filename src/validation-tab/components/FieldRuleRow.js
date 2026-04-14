@@ -55,12 +55,20 @@ export default function FieldRuleRow( { field, rules, onChange } ) {
                     value={ rules.label ?? '' }
                     onChange={ v => setRule( 'label', v ) }
                 />
-                <ToggleControl
-                    label="Required"
-                    checked={ !! rules.required }
-                    onChange={ v => setRule( 'required', v ) }
-                />
-                <RulesComponent rules={ rules } onChange={ setRules } />
+                { type === 'radio' ? (
+                    <p className="cfv-rules-note">
+                        Radio groups are always required by Contact Form 7 core.
+                        To make this effectively optional, add a "None" option or
+                        set a default selection in the form shortcode.
+                    </p>
+                ) : (
+                    <ToggleControl
+                        label="Required"
+                        checked={ !! rules.required }
+                        onChange={ v => setRule( 'required', v ) }
+                    />
+                ) }
+                { type !== 'radio' && <RulesComponent rules={ rules } onChange={ setRules } /> }
             </div>
         </div>
     );
