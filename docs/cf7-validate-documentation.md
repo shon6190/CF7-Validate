@@ -620,6 +620,36 @@ The textarea security sanitise rule strips or blocks the following patterns from
 
 ## 12. Changelog
 
+### 1.0.1 — Always-On Rules, Radio Handling, Space Enforcement
+
+**Server-side**
+- Email, tel, and URL format checks now fire **even when the field is not in the saved validation config** — uses `WPCF7_ContactForm::scan_form_tags()` to discover all format-typed inputs on the form.
+- Leading/trailing-space detection now reads the pre-sanitised raw value (before `sanitize_textarea_field` trims it) so the check can actually flag the offence.
+- Textarea security-sanitise pattern scan moved to the raw value for the same reason — `<script>` tags were being stripped by WP sanitisation before we could flag them.
+- CF7-returned array values (select / checkbox) are unwrapped to a scalar string for non-group types.
+- Required check on checkbox / radio filters empty strings so an empty-string POST no longer satisfies the requirement.
+- SQL-keyword regex in `strip_dangerous_patterns()` tightened with context so common words like "select" or "update" no longer cause false positives.
+
+**Radio groups**
+- Contact Form 7 core always treats a radio group as required. The per-field **Required** toggle is now hidden for radio rows in the Validation tab and replaced by an explanatory note.
+- Radio groups always receive the red asterisk (never the "(Optional)" label), whether or not they're in the saved config.
+- Server-returned `invalid_fields` for radios are mirrored into our `cfv-error-tip` span via the `wpcf7submit` event, so errors show even when `.wpcf7-not-valid-tip` is hidden.
+- Generic browser / CF7 messages like *"Please fill out this field."* are rewritten to `"Please select at least one {Label}"` for radio and checkbox, or `"{Label} is required"` for everything else.
+
+**Space enforcement (config-independent)**
+- `email` and `tel` inputs now block the space key on `keydown` and strip whitespace from pasted content. The browser's `type="email"` sanitisation was hiding leading/trailing whitespace from `.value`, so an input-event strip alone wasn't enough.
+- `text`, `textarea`, `url`, `number` inputs block leading whitespace on input and strip trailing whitespace on blur.
+- These rules apply to every matching field on the form, whether configured or not.
+
+**Error-tip coverage**
+- The decorator now injects an empty `cfv-error-tip` span for *every* CF7 field on the form (second pass after the config loop), so server-returned errors always have a DOM target.
+
+**Browser HTML5 validation**
+- `wpcf7_form_novalidate` is now filtered to true — browser popups never fire on CF7 forms, so only our `cfv-error-tip` UI surfaces required/format errors.
+
+**Naming**
+- Plugin renamed from "CF7 Validate Pro" to **CF7 Validate** (WordPress.org submission prep). Folder is now `cf7-validate/` with main file `cf7-validate.php`.
+
 ### 1.0.0 — Initial Release
 
 - Per-field validation rules configurable via CF7 editor Validation tab
