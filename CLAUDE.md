@@ -139,21 +139,32 @@ Build output goes to `build/validation-tab/`. The PHP side reads `build/validati
 
 8. **React 18 createRoot** — uses `createRoot(el).render()` via `@wordpress/element`, not the deprecated `ReactDOM.render()`.
 
+9. **Always-on rules (config-independent)** — some rules fire regardless of whether a field is present in the saved config:
+   - **Whitespace:** leading whitespace blocked on `text`, `textarea`, `url`, `number`; trailing whitespace stripped on blur. Email/tel strip **all** whitespace (keydown + paste guards, since `type="email"` auto-sanitizes `.value` per HTML5 spec and hides the space from JS).
+   - **Format checks:** `email`, `tel`, `url` inputs get format validation even when not configured — both client-side ([cfv-validation.js:`runUnmanagedValidations`]) and server-side ([class-cfv-validator.php:`validate_unmanaged_format_fields`] via `WPCF7_ContactForm::scan_form_tags()`).
+   - **Error-tip spans:** the decorator injects `cfv-error-tip` for *every* CF7 field on the form (second pass after the config loop), so server-returned `invalid_fields` always have a target once `.wpcf7-not-valid-tip` is hidden.
+   - **Radio required:** CF7 core always enforces radio — our Required toggle is hidden for radio, and an asterisk is auto-injected. The Validation tab shows an explanatory note instead of a toggle.
+
+10. **Browser HTML5 validation disabled** — the `wpcf7_form_novalidate` filter returns true so browser popups never fire; only our `cfv-error-tip` UI surfaces errors.
+
+11. **wpcf7submit mirror** — on any submit, `invalid_fields` from the AJAX response is mirrored into `cfv-error-tip` spans. Generic messages like "Please fill out this field" get rewritten to `"Please select at least one {Label}"` (radio/checkbox) or `"{Label} is required"`.
+
 ---
 
 ## Supported Field Types & Rules
 
 | Type | Key Rules |
 |------|-----------|
-| `text` | min/max length, no_leading_spaces, allow_special_chars, allow_emoji, collapse_whitespace, input_mask, counter_format |
-| `name` | min/max length, alpha_only, no_leading_spaces |
-| `email` | format always validated (FILTER_VALIDATE_EMAIL); required toggle only |
-| `tel` | min/max length, enable_intl (E.164 via intl-tel-input), default_country |
-| `number` | min_value, max_value, allow_negative, allow_zero |
-| `url` | format always validated (FILTER_VALIDATE_URL + https?:// check) |
-| `textarea` | max_length (1500), counter_format, max_height, security_sanitize |
+| `text` | min/max length, leading-space blocked (always), allow_special_chars, allow_emoji, collapse_whitespace, input_mask, counter_format |
+| `name` | min/max length, alpha_only, leading-space blocked (always) |
+| `email` | format always validated (FILTER_VALIDATE_EMAIL, client + server, config-independent); all whitespace stripped on keydown/paste |
+| `tel` | min/max length, all whitespace stripped on keydown/paste, enable_intl (E.164 via intl-tel-input), default_country |
+| `number` | min_value, max_value, allow_negative, allow_zero, leading-space blocked |
+| `url` | format always validated (FILTER_VALIDATE_URL + https?:// check, client + server, config-independent) |
+| `textarea` | max_length (1500), counter_format, max_height, security_sanitize, leading-space blocked |
 | `select` | placeholder_value (treated as "not selected") |
-| `checkbox` / `radio` | required (at least one checked) |
+| `checkbox` | required (at least one checked) |
+| `radio` | always required (CF7 core enforced — no toggle); asterisk auto-injected |
 | `file` | allowed_types (comma-separated extensions), max_size_mb, allow_multiple, show_preview |
 
 ---

@@ -51,6 +51,10 @@ class CFV_Hooks {
         // Also used to detect which forms rendered so scripts are enqueued on-demand.
         add_filter( 'wpcf7_form_elements', [ __CLASS__, 'decorate_form_elements' ] );
 
+        // Disable browser's HTML5 popup validation so only our custom
+        // cfv-error-tip UI surfaces required/format errors.
+        add_filter( 'wpcf7_form_novalidate', '__return_true' );
+
         // Server-side validation — intercept before CF7 sends email.
         add_filter( 'wpcf7_before_send_mail', [ __CLASS__, 'validate_submission' ], 10, 3 );
 
