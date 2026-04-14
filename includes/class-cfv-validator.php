@@ -25,12 +25,20 @@ class CFV_Validator {
             // Determine the submitted value.
             // For phone with intl-tel-input, use the hidden full-number field.
             if ( $type === 'tel' && ! empty( $field_config['enable_intl'] ) ) {
-                $value = sanitize_text_field( wp_unslash( $submission[ "cfv_phone_full_$field_name" ] ?? '' ) );
+                $raw   = wp_unslash( $submission[ "cfv_phone_full_$field_name" ] ?? '' );
+                $value = sanitize_text_field( $raw );
             } else {
-                $value = sanitize_textarea_field( wp_unslash( $submission[ $field_name ] ?? '' ) );
+                // CF7 returns select/checkbox/radio values as arrays; unwrap to a
+                // scalar string for all non-checkbox/radio types (BUG-005).
+                $raw_input = wp_unslash( $submission[ $field_name ] ?? $submission[ "{$field_name}[]" ] ?? '' );
+                if ( $type !== 'checkbox' && $type !== 'radio' && is_array( $raw_input ) ) {
+                    $raw_input = $raw_input[0] ?? '';
+                }
+                $raw   = is_array( $raw_input ) ? '' : (string) $raw_input;
+                $value = sanitize_textarea_field( $raw );
             }
 
-            $error = self::validate_field( $field_name, $value, $label, $field_config, $submission, $files );
+            $error = self::validate_field( $field_name, $raw, $value, $label, $field_config, $submission, $files );
             if ( $error ) {
                 $errors[ $field_name ] = $error;
             }
@@ -43,6 +51,7 @@ class CFV_Validator {
 
     private static function validate_field(
         string $field_name,
+        string $raw,
         string $value,
         string $label,
         array  $config,
@@ -55,7 +64,10 @@ class CFV_Validator {
         // Required check.
         if ( $required ) {
             if ( $type === 'checkbox' || $type === 'radio' ) {
+                // BUG-002: filter out empty strings before the empty-check so that
+                // an empty-string POST value doesn't satisfy required (BUG-002).
                 $group_values = (array) ( $submission[ $field_name ] ?? $submission[ "{$field_name}[]" ] ?? [] );
+                $group_values = array_filter( $group_values, fn( $v ) => $v !== '' );
                 if ( empty( $group_values ) ) {
                     return "Please select at least one $label";
                 }
@@ -78,9 +90,10 @@ class CFV_Validator {
         // Skip further checks if empty and not required.
         if ( trim( $value ) === '' && $type !== 'file' ) return '';
 
-        // Leading / trailing space check for all text-based fields.
+        // Leading / trailing space check — use $raw (pre-sanitize) because
+        // sanitize_textarea_field trims the value before we get to check it (BUG-003).
         $text_based = [ 'text', 'name', 'email', 'tel', 'textarea', 'url', 'number' ];
-        if ( in_array( $type, $text_based, true ) && $value !== trim( $value ) ) {
+        if ( in_array( $type, $text_based, true ) && $raw !== trim( $raw ) ) {
             return "$label must not have leading or trailing spaces";
         }
 
@@ -159,8 +172,10 @@ class CFV_Validator {
                 }
             }
             if ( $type === 'textarea' && ! empty( $config['security_sanitize'] ) ) {
-                $stripped = self::strip_dangerous_patterns( $value );
-                if ( $stripped !== $value ) {
+                // BUG-001: check $raw so that <script> tags aren't silently stripped
+                // by sanitize_textarea_field before we get to inspect them.
+                $stripped = self::strip_dangerous_patterns( $raw );
+                if ( $stripped !== $raw ) {
                     return "$label contains invalid characters";
                 }
             }
@@ -211,7 +226,16 @@ class CFV_Validator {
             '/<\?=/i',
             '/eval\s*\(/i',
             '/alert\s*\(/i',
-            '/\b(DROP|INSERT|SELECT|UPDATE|DELETE|CREATE|ALTER|EXEC)\b/i',
+            // BUG-004: context-requiring SQL patterns to avoid false positives
+            // on common words like "select", "delete", "create", "update".
+            '/\bDROP\s+TABLE\b/i',
+            '/\bINSERT\s+INTO\b/i',
+            '/\bSELECT\s+.+\s+FROM\b/i',
+            '/\bUPDATE\s+\w+\s+SET\b/i',
+            '/\bDELETE\s+FROM\b/i',
+            '/\bCREATE\s+(TABLE|DATABASE|INDEX)\b/i',
+            '/\bALTER\s+TABLE\b/i',
+            '/\bEXEC\s*\(/i',
             '/--/',
             '/\{[^}]*\}/',
         ];
