@@ -1,14 +1,14 @@
-# CF7 Validate Pro — CLAUDE.md
+# CF7 Validate — CLAUDE.md
 
 ## Project Overview
 
-**CF7 Validate Pro** is a WordPress addon plugin for Contact Form 7 (CF7). It adds comprehensive client-side (JavaScript) and server-side (PHP) validation, configurable via a custom React-powered **Validation** tab injected into the CF7 form editor.
+**CF7 Validate** is a WordPress addon plugin for Contact Form 7 (CF7). It adds comprehensive client-side (JavaScript) and server-side (PHP) validation, configurable via a custom React-powered **Validation** tab injected into the CF7 form editor.
 
 - **Version:** 1.0.0
 - **Author:** Shon
 - **Requires:** WordPress 5.9+, PHP 7.4+, Contact Form 7 (active)
-- **Plugin folder:** `contact-form-validation/`
-- **Main file:** `cf7-validate-pro.php`
+- **Plugin folder:** `cf7-validate/`
+- **Main file:** `cf7-validate.php`
 - **GitHub:** `https://github.com/shon6190/CF7-Validate-Pro` — default branch: `develop`
 
 ---
@@ -16,8 +16,8 @@
 ## Directory Structure
 
 ```
-contact-form-validation/
-├── cf7-validate-pro.php          # Plugin bootstrap, constants, CF7 dependency check
+cf7-validate/
+├── cf7-validate.php              # Plugin bootstrap, constants, CF7 dependency check
 ├── uninstall.php                 # Deletes all _cfv_validation_config post meta on uninstall
 ├── package.json                  # @wordpress/scripts build config
 ├── includes/
