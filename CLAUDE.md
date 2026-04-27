@@ -9,7 +9,7 @@
 - **Requires:** WordPress 5.9+, PHP 7.4+, Contact Form 7 (active)
 - **Plugin folder:** `cf7-validate/`
 - **Main file:** `cf7-validate.php`
-- **GitHub:** `https://github.com/shon6190/CF7-Validate-Pro` — default branch: `develop`
+- **GitHub:** `https://github.com/shon6190/cf7-validate` — default branch: `develop`
 
 ---
 

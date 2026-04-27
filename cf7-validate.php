@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       CF7 Validate
- * Plugin URI:        https://github.com/shon6190/CF7-Validate-Pro
+ * Plugin URI:        https://github.com/shon6190/cf7-validate
  * Description:       Comprehensive validation addon for Contact Form 7.
  * Version:           1.0.0
  * Requires at least: 5.9
