@@ -11,7 +11,7 @@
         alphaOnly:         ( v ) => /^[a-zA-Z\s]*$/.test( v ),
         minLength:         ( v, n ) => v.trim().length >= parseInt( n, 10 ),
         maxLength:         ( v, n ) => v.trim().length <= parseInt( n, 10 ),
-        email:             ( v ) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test( v.trim() ),
+        email:             ( v ) => /^[a-zA-Z0-9._-]+@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/.test( v.trim() ),
         url:               ( v ) => /^https?:\/\/.+\..+/.test( v.trim() ),
         numericOnly:       ( v ) => /^-?\d*\.?\d*$/.test( v.replace( /\s/g, '' ) ),
         minValue:          ( v, n ) => parseFloat( v ) >= parseFloat( n ),
@@ -431,21 +431,6 @@
                 btn.disabled = true;
                 btn.classList.add( 'cfv-loading' );
             }
-
-            // Inject progress bar if not already present.
-            let progressBar = formEl.querySelector( '.cfv-upload-progress' );
-            if ( ! progressBar ) {
-                progressBar = document.createElement( 'div' );
-                progressBar.className = 'cfv-upload-progress';
-                const inner = document.createElement( 'div' );
-                inner.className = 'cfv-upload-progress__bar';
-                progressBar.appendChild( inner );
-                formEl.appendChild( progressBar );
-            }
-
-            // Show 70% progress on valid submit; CF7 events will reset it.
-            const progressBarEl = progressBar.querySelector( '.cfv-upload-progress__bar' );
-            if ( progressBarEl ) progressBarEl.style.width = '70%';
         } );
 
         // CF7 form reset after successful submission.
@@ -458,17 +443,15 @@
                 const defaultCountry = fieldConfigs[ Object.keys( itiInstances ).find( k => itiInstances[ k ] === iti ) ]?.default_country || 'auto';
                 if ( defaultCountry !== 'auto' ) iti.setCountry( defaultCountry );
             } );
-            // Re-enable submit button and reset progress bar.
+            // Re-enable submit button.
             const btn = formEl.querySelector( '[type="submit"]' );
             if ( btn ) {
                 btn.disabled = false;
                 btn.classList.remove( 'cfv-loading' );
             }
-            const bar = formEl.querySelector( '.cfv-upload-progress__bar' );
-            if ( bar ) bar.style.width = '0%';
         } );
 
-        // Re-enable button and reset progress on any CF7 failure response.
+        // Re-enable button on any CF7 failure response.
         [ 'wpcf7invalid', 'wpcf7mailfailed', 'wpcf7spam' ].forEach( ( cfvEvt ) => {
             formEl.addEventListener( cfvEvt, () => {
                 const btn = formEl.querySelector( '[type="submit"]' );
@@ -476,8 +459,6 @@
                     btn.disabled = false;
                     btn.classList.remove( 'cfv-loading' );
                 }
-                const bar = formEl.querySelector( '.cfv-upload-progress__bar' );
-                if ( bar ) bar.style.width = '0%';
             } );
         } );
 

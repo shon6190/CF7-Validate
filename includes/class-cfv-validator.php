@@ -78,7 +78,7 @@ class CFV_Validator {
             $ok    = true;
             $msg   = '';
             if ( $basetype === 'email' ) {
-                $ok  = (bool) filter_var( $value, FILTER_VALIDATE_EMAIL );
+                $ok  = (bool) preg_match( '/^[a-zA-Z0-9._-]+@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/', $value );
                 $msg = "$label must be a valid email address";
             } elseif ( $basetype === 'url' ) {
                 $ok  = (bool) filter_var( $value, FILTER_VALIDATE_URL ) && (bool) preg_match( '#^https?://#i', $value );
@@ -147,7 +147,7 @@ class CFV_Validator {
         // Email.
         if ( $type === 'email' ) {
             $trimmed = trim( $value );
-            if ( ! filter_var( $trimmed, FILTER_VALIDATE_EMAIL ) ) {
+            if ( ! preg_match( '/^[a-zA-Z0-9._-]+@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/', $trimmed ) ) {
                 return "$label must be a valid email address";
             }
         }
