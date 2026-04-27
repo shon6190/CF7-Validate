@@ -297,8 +297,51 @@
             for ( const name of Object.keys( fieldConfigs ) ) {
                 if ( ! runFieldValidation( name ) ) allValid = false;
             }
+            // Always-on checks for un-configured email / tel / url inputs.
+            if ( ! runUnmanagedValidations() ) allValid = false;
             return allValid;
         }
+
+        // --------------------------------------------------------------------
+        // Format validation for email / tel / url fields NOT in config. These
+        // run regardless of whether the user opened the field's row in the
+        // Validation tab — matches what users expect from inputs with those
+        // HTML types.
+        // --------------------------------------------------------------------
+        function runUnmanagedValidations() {
+            let allValid = true;
+            const inputs = formEl.querySelectorAll( 'input[type="email"], input[type="tel"], input[type="url"]' );
+            inputs.forEach( ( el ) => {
+                const name = ( el.name || '' ).replace( /\[\]$/, '' );
+                if ( ! name || fieldConfigs[ name ] ) return; // handled by config
+                const value = ( el.value || '' ).trim();
+                if ( value === '' ) { clearError( name, formEl ); return; }
+                const kind = el.type.toLowerCase();
+                let ok = true;
+                if ( kind === 'email' ) ok = Rules.email( value );
+                else if ( kind === 'url' ) ok = Rules.url( value );
+                else if ( kind === 'tel' ) ok = Rules.phoneBasic( value, 7, 15 );
+                if ( ! ok ) {
+                    const label = toLabel( name );
+                    const msgKey = kind === 'tel' ? 'phoneBasic' : kind;
+                    showError( name, buildMessage( msgKey, label, {} ), formEl );
+                    allValid = false;
+                } else {
+                    clearError( name, formEl );
+                }
+            } );
+            return allValid;
+        }
+
+        // Bind per-input listeners for unmanaged email / tel / url so users
+        // see validation feedback as they type / blur — not only on submit.
+        formEl.querySelectorAll( 'input[type="email"], input[type="tel"], input[type="url"]' ).forEach( ( el ) => {
+            const name = ( el.name || '' ).replace( /\[\]$/, '' );
+            if ( fieldConfigs[ name ] ) return;
+            [ 'input', 'blur', 'change' ].forEach( ( evt ) => {
+                el.addEventListener( evt, () => runUnmanagedValidations() );
+            } );
+        } );
 
         // Attach per-field event listeners.
         Object.keys( fieldConfigs ).forEach( ( name ) => {
@@ -309,13 +352,10 @@
             const events = [ 'focus', 'input', 'blur', 'change' ];
             events.forEach( ( evt ) => {
                 fieldEl.addEventListener( evt, () => {
-                    if ( evt === 'blur' ) {
-                        // Always trim leading/trailing spaces on blur for all fields.
-                        fieldEl.value = fieldEl.value.trim();
-                        // Also collapse consecutive internal whitespace if configured.
-                        if ( config.collapse_whitespace ) {
-                            fieldEl.value = collapseWhitespace( fieldEl.value );
-                        }
+                    if ( evt === 'blur' && config.collapse_whitespace ) {
+                        // Collapse consecutive internal whitespace only (still
+                        // preserve leading/trailing so the validator can flag them).
+                        fieldEl.value = collapseWhitespace( fieldEl.value );
                     }
                     // Apply input mask on input.
                     if ( evt === 'input' && config.input_mask ) {
@@ -438,6 +478,112 @@
                 }
                 const bar = formEl.querySelector( '.cfv-upload-progress__bar' );
                 if ( bar ) bar.style.width = '0%';
+            } );
+        } );
+
+        // Mirror server-side invalid_fields into our cfv-error-tip spans. CF7
+        // fires different events depending on how a submission failed, and the
+        // response status we set in override_error_response may arrive after
+        // CF7 already dispatched the event — so listen on wpcf7submit (fires
+        // for every submission) and read invalid_fields from the payload.
+        // Always-on space enforcement (independent of validation config):
+        //   - email / tel: strip ALL whitespace instantly as the user types
+        //   - text / name / textarea / url / number: prevent leading spaces
+        //     and strip trailing spaces on blur
+        // These rules are hard requirements and must fire even for fields that
+        // have never been configured in the Validation tab.
+        // Block typed/pasted whitespace on email and tel BEFORE it enters the
+        // DOM — for type="email" the browser auto-sanitizes leading/trailing
+        // whitespace out of .value, so input-event stripping alone is not
+        // enough (the displayed value still shows the spaces).
+        formEl.querySelectorAll( 'input[type="email"], input[type="tel"]' ).forEach( ( el ) => {
+            el.addEventListener( 'keydown', ( e ) => {
+                if ( e.key === ' ' || e.code === 'Space' ) e.preventDefault();
+            } );
+            el.addEventListener( 'paste', ( e ) => {
+                const text = ( e.clipboardData || window.clipboardData )?.getData( 'text' ) ?? '';
+                if ( /\s/.test( text ) ) {
+                    e.preventDefault();
+                    const clean = text.replace( /\s+/g, '' );
+                    const start = el.selectionStart ?? el.value.length;
+                    const end   = el.selectionEnd   ?? el.value.length;
+                    el.value = el.value.slice( 0, start ) + clean + el.value.slice( end );
+                    const pos = start + clean.length;
+                    try { el.setSelectionRange( pos, pos ); } catch ( _ ) {}
+                    el.dispatchEvent( new Event( 'input', { bubbles: true } ) );
+                }
+            } );
+        } );
+
+        const STRIP_ALL_TYPES   = new Set( [ 'email', 'tel' ] );
+        const BLOCK_LEADING     = new Set( [ 'text', 'search', 'url', 'number', 'textarea' ] );
+        formEl.addEventListener( 'input', ( e ) => {
+            const el = e.target;
+            if ( ! el || ! el.name ) return;
+            const kind = ( el.tagName === 'TEXTAREA' ) ? 'textarea' : ( el.type || '' ).toLowerCase();
+            if ( STRIP_ALL_TYPES.has( kind ) ) {
+                if ( /\s/.test( el.value ) ) {
+                    const pos = el.selectionStart;
+                    const before = el.value;
+                    el.value = before.replace( /\s+/g, '' );
+                    if ( typeof pos === 'number' ) {
+                        const diff = before.length - el.value.length;
+                        try { el.setSelectionRange( pos - diff, pos - diff ); } catch ( _ ) {}
+                    }
+                }
+            } else if ( BLOCK_LEADING.has( kind ) ) {
+                if ( /^\s/.test( el.value ) ) {
+                    el.value = el.value.replace( /^\s+/, '' );
+                }
+            }
+        }, true );
+        formEl.addEventListener( 'blur', ( e ) => {
+            const el = e.target;
+            if ( ! el || ! el.name ) return;
+            const kind = ( el.tagName === 'TEXTAREA' ) ? 'textarea' : ( el.type || '' ).toLowerCase();
+            if ( BLOCK_LEADING.has( kind ) && el.value !== el.value.replace( /\s+$/, '' ) ) {
+                el.value = el.value.replace( /\s+$/, '' );
+            }
+        }, true );
+
+        // Clear any server-populated error tip as soon as the user interacts
+        // with a field that is NOT in the client validation config. Fields
+        // in fieldConfigs are handled by their own per-field listeners which
+        // correctly toggle the error — clearing here would race them.
+        const clearIfUnmanaged = ( e ) => {
+            const target = e.target;
+            if ( ! target || ! target.name ) return;
+            const name = target.name.replace( /\[\]$/, '' );
+            if ( fieldConfigs[ name ] ) return;
+            clearError( name, formEl );
+        };
+        formEl.addEventListener( 'change', clearIfUnmanaged, true );
+        formEl.addEventListener( 'input',  clearIfUnmanaged, true );
+
+        formEl.addEventListener( 'wpcf7submit', ( e ) => {
+            const invalidFields = e?.detail?.apiResponse?.invalid_fields || [];
+            if ( ! invalidFields.length ) return;
+            invalidFields.forEach( ( entry ) => {
+                const rawName = entry.field || entry.into || '';
+                const name    = rawName.replace( /^.*\[name=["']?/, '' ).replace( /["']?\].*$/, '' ).replace( /\[\]$/, '' );
+                if ( ! name ) return;
+
+                // Normalize inconsistent messages: CF7 / browser may return
+                // "Please fill out this field." — replace with our own
+                // label-aware message based on the detected field type.
+                const config = fieldConfigs[ name ] || {};
+                const label  = config.label || toLabel( name );
+                const el     = formEl.querySelector( `[name="${ name }" i], [name="${ name }[]" i]` );
+                const type   = config.type || ( el ? el.type : '' );
+
+                let message = entry.message || '';
+                if ( ! message || /please fill out this field/i.test( message ) ) {
+                    message = ( type === 'radio' || type === 'checkbox' )
+                        ? `Please select at least one ${ label }`
+                        : `${ label } is required`;
+                }
+
+                showError( name, message, formEl );
             } );
         } );
     }

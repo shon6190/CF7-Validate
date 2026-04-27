@@ -44,7 +44,54 @@ class CFV_Validator {
             }
         }
 
+        // --------------------------------------------------------------------
+        // Always-on format checks for email / tel / url fields that are NOT
+        // in the saved config — mirrors the same always-on JS validation.
+        // --------------------------------------------------------------------
+        self::validate_unmanaged_format_fields( $form_id, $submission, $fields, $errors );
+
         return $errors;
+    }
+
+    /**
+     * Validate format on any email / tel / url input on the form that has
+     * no entry in the saved validation config.
+     */
+    private static function validate_unmanaged_format_fields( int $form_id, array $submission, array $fields, array &$errors ): void {
+        if ( ! class_exists( 'WPCF7_ContactForm' ) ) return;
+        $cf = WPCF7_ContactForm::get_instance( $form_id );
+        if ( ! $cf ) return;
+
+        foreach ( $cf->scan_form_tags() as $tag ) {
+            $basetype = $tag->basetype ?? '';
+            if ( ! in_array( $basetype, [ 'email', 'tel', 'url' ], true ) ) continue;
+
+            $name = $tag->name ?? '';
+            if ( $name === '' || isset( $fields[ $name ] ) || isset( $errors[ $name ] ) ) continue;
+
+            $raw   = wp_unslash( $submission[ $name ] ?? '' );
+            if ( is_array( $raw ) ) $raw = $raw[0] ?? '';
+            $value = trim( (string) $raw );
+            if ( $value === '' ) continue;
+
+            $label = CFV_Config::generate_label( $name );
+            $ok    = true;
+            $msg   = '';
+            if ( $basetype === 'email' ) {
+                $ok  = (bool) filter_var( $value, FILTER_VALIDATE_EMAIL );
+                $msg = "$label must be a valid email address";
+            } elseif ( $basetype === 'url' ) {
+                $ok  = (bool) filter_var( $value, FILTER_VALIDATE_URL ) && (bool) preg_match( '#^https?://#i', $value );
+                $msg = "$label must be a valid URL including http:// or https://";
+            } else { // tel
+                $digits = preg_replace( '/[\s\-()+]/', '', $value );
+                $ok     = (bool) preg_match( '/^\d{7,15}$/', $digits );
+                $msg    = "$label must be a valid phone number";
+            }
+            if ( ! $ok ) {
+                $errors[ $name ] = $msg;
+            }
+        }
     }
 
     // -------------------------------------------------------------------------

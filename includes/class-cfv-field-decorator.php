@@ -25,7 +25,10 @@ class CFV_Field_Decorator {
             }
             $processed[ $field_key ] = true;
 
-            $required       = ! empty( $field_config['required'] );
+            $type           = $field_config['type'] ?? '';
+            // Radio groups are always required by CF7 core — force asterisk
+            // and never render the (Optional) label for them.
+            $required       = ( $type === 'radio' ) ? true : ! empty( $field_config['required'] );
             $counter_format = $field_config['counter_format'] ?? 'off';
             $max_length     = ! empty( $field_config['max_length'] ) ? (int) $field_config['max_length'] : 0;
             $max_height     = ! empty( $field_config['max_height'] ) ? (int) $field_config['max_height'] : 0;
@@ -121,6 +124,72 @@ class CFV_Field_Decorator {
                     },
                     $html
                 );
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Inject cfv-error-tip spans for every remaining CF7 field on the form
+        // that wasn't in $fields. CF7 core (or the browser) can still return
+        // validation errors for these — without a target span, our JS mirror
+        // has nowhere to display them once .wpcf7-not-valid-tip is hidden.
+        // --------------------------------------------------------------------
+        if ( preg_match_all(
+            '/<span\b[^>]*\bdata-name=["\']([^"\']+)["\'][^>]*>/si',
+            $html,
+            $all_wraps
+        ) ) {
+            $seen = [];
+            foreach ( $all_wraps[1] as $wrap_name ) {
+                $key = strtolower( $wrap_name );
+                if ( isset( $processed[ $key ] ) || isset( $seen[ $key ] ) ) {
+                    continue;
+                }
+                $seen[ $key ] = true;
+                $error_span = '<span class="cfv-error-tip" data-field="' . esc_attr( $wrap_name )
+                            . '" role="alert" aria-live="polite"></span>';
+                $html = self::inject_after_control_wrap( $html, $wrap_name, $error_span );
+
+                // If this un-configured field is a radio group, inject the red
+                // asterisk too — CF7 core treats radio as always-required so the
+                // label should reflect that even without a saved config entry.
+                $quoted_wrap = preg_quote( $wrap_name, '/' );
+                // Match only inputs whose NAME is this field AND type is radio —
+                // avoids greedy matches into unrelated fields further down.
+                if ( preg_match(
+                    '/<input\b[^>]*\btype=["\']?radio["\']?[^>]*\bname=["\']?' . $quoted_wrap . '["\']?/si',
+                    $html
+                ) || preg_match(
+                    '/<input\b[^>]*\bname=["\']?' . $quoted_wrap . '["\']?[^>]*\btype=["\']?radio["\']?/si',
+                    $html
+                ) ) {
+                    $asterisk = '<span class="cfv-required-asterisk" aria-hidden="true">*</span>';
+                    $label_pattern = '/(<label\b[^>]*>)((?:(?!<\/label>)[\s\S])*?)(<span\b[^>]*\bdata-name=["\']?' . $quoted_wrap . '["\']?)/si';
+                    $before_html   = $html;
+                    $html          = preg_replace_callback( $label_pattern, function ( $m ) use ( $asterisk ) {
+                        $text     = preg_replace( '/(\s*<br\s*\/?>\s*)+$/i', '', $m[2] );
+                        $trailing = substr( $m[2], strlen( $text ) );
+                        return $m[1] . $text . ' ' . $asterisk . $trailing . $m[3];
+                    }, $html );
+                    if ( $html === $before_html ) {
+                        $wrap_pattern = '/(\s*<br\s*\/?>\s*)?(<span\b[^>]*\bdata-name=["\']?' . $quoted_wrap . '["\']?[^>]*>)/si';
+                        $html         = preg_replace( $wrap_pattern, ' ' . $asterisk . ' $2', $html, 1 );
+                    }
+                } elseif ( $show_optional ) {
+                    // Non-radio un-configured field: inject (Optional) label if
+                    // the global show_optional_label toggle is enabled.
+                    $optional      = '<span class="cfv-optional-label">(Optional)</span>';
+                    $label_pattern = '/(<label\b[^>]*>)((?:(?!<\/label>)[\s\S])*?)(<span\b[^>]*\bdata-name=["\']?' . $quoted_wrap . '["\']?)/si';
+                    $before_html   = $html;
+                    $html          = preg_replace_callback( $label_pattern, function ( $m ) use ( $optional ) {
+                        $text     = preg_replace( '/(\s*<br\s*\/?>\s*)+$/i', '', $m[2] );
+                        $trailing = substr( $m[2], strlen( $text ) );
+                        return $m[1] . $text . ' ' . $optional . $trailing . $m[3];
+                    }, $html );
+                    if ( $html === $before_html ) {
+                        $wrap_pattern = '/(\s*<br\s*\/?>\s*)?(<span\b[^>]*\bdata-name=["\']?' . $quoted_wrap . '["\']?[^>]*>)/si';
+                        $html         = preg_replace( $wrap_pattern, ' ' . $optional . ' $2', $html, 1 );
+                    }
+                }
             }
         }
 
