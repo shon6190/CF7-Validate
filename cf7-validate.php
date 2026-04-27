@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'CFV_VERSION', '1.0.0' );
+define( 'CFV_VERSION', '1.0.2' );
 define( 'CFV_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CFV_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CFV_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
